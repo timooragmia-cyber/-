@@ -44,6 +44,14 @@ export type DemoHousehold = {
     start: string;
     active: boolean;
   }[];
+  /** Phase 3b: investments (fictional). */
+  invest?: {
+    properties?: { label: string; city: string; usage: "RESIDENCE" | "INVESTMENT"; only: boolean; purchaseDate: string; price: number; costs: number; improvements: number; value: number; rent: number; expenses: number; mortgage: number; payment: number }[];
+    portfolio?: { name: string; institution: string; target: Record<string, number>; holdings: { key: string; name: string; assetClass: "EQUITY_IL" | "EQUITY_FOREIGN" | "BONDS_GOV" | "BONDS_CORP" | "MONEY_MARKET" | "CASH" | "OTHER" }[];
+      txns: { date: string; type: "DEPOSIT" | "WITHDRAWAL" | "BUY" | "SELL" | "DIVIDEND" | "INTEREST" | "FEE" | "TAX"; holding?: string; units?: number; amount: number; feeKind?: "MANAGEMENT" | "TRADING" | "CUSTODY" | "OTHER" }[];
+      valuations: { asOf: string; values: Record<string, number> }[] };
+    deposits?: { kind: "BANK_DEPOSIT" | "MONEY_MARKET_FUND"; institution: string; label: string; balance: number; ratePct: number; feePct: number; maturity?: string }[];
+  };
   notes: string[];
   tasks: string[];
 };
@@ -90,6 +98,9 @@ export const demoHouseholds: DemoHousehold[] = [
       { person: "رنا", type: "PENSION_COMPREHENSIVE", provider: "מגדל מקפת", track: "מסלול לבני 50 ומטה", balance: 210000, history: [["2026-06-30", 203500]], employee: 590, employer: 640, severance: 500, feeDepPct: 2.49, feeAccPct: 0.27, start: "2011-09-01", active: true },
       { person: "رنا", type: "STUDY_FUND", provider: "אלטשולר שחם השתלמות", track: "כללי", balance: 78000, history: [["2026-06-30", 74900]], employee: 245, employer: 735, severance: 0, feeDepPct: 0, feeAccPct: 0.7, start: "2014-09-01", active: true },
     ],
+    invest: {
+      deposits: [{ kind: "BANK_DEPOSIT", institution: "לאומי", label: "פיקדון שקלי 6 חודשים", balance: 5000, ratePct: 3.6, feePct: 0, maturity: "2027-03-01" }],
+    },
     lines: khatib,
     closePeriods: ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"],
     learned: [{ description: "העברה - לקוח עבודות חשמל", category: "income_business" }],
@@ -132,6 +143,38 @@ export const demoHouseholds: DemoHousehold[] = [
       { person: "ואיל", type: "STUDY_FUND", provider: "מיטב השתלמות", track: "מניות", balance: 145000, history: [["2026-06-30", 139800]], employee: 610, employer: 1830, severance: 0, feeDepPct: 0, feeAccPct: 0.5, start: "2010-02-01", active: true },
       { person: "ואיל", type: "INVESTMENT_PROVIDENT_FUND", provider: "הפניקס גמל להשקעה", track: "מסלול S&P 500", balance: 62000, history: [["2026-06-30", 52500]], employee: 3000, employer: 0, severance: 0, feeDepPct: 0, feeAccPct: 0.62, start: "2023-01-01", active: true },
     ],
+    invest: {
+      properties: [
+        { label: "בית המשפחה + יחידת דיור", city: "בית ג'ן", usage: "RESIDENCE", only: true, purchaseDate: "2009-08-01", price: 1150000, costs: 45000, improvements: 260000, value: 2450000, rent: 2800, expenses: 250, mortgage: 610000, payment: 5600 },
+      ],
+      portfolio: {
+        name: "תיק מסחר עצמאי", institution: "מיטב טרייד", target: { EQUITY_IL: 300000, EQUITY_FOREIGN: 400000, BONDS_GOV: 200000, CASH: 100000 },
+        holdings: [
+          { key: "ta125", name: "קרן מחקה ת\"א 125", assetClass: "EQUITY_IL" },
+          { key: "sp500", name: "קרן מחקה S&P 500", assetClass: "EQUITY_FOREIGN" },
+          { key: "gov", name: "אג\"ח ממשלתי שקלי 5 שנים", assetClass: "BONDS_GOV" },
+        ],
+        txns: [
+          { date: "2025-11-03", type: "DEPOSIT", amount: 60000 },
+          { date: "2025-11-04", type: "BUY", holding: "ta125", units: 120, amount: 15000 },
+          { date: "2025-11-04", type: "BUY", holding: "sp500", units: 90, amount: 27000 },
+          { date: "2025-11-04", type: "BUY", holding: "gov", units: 100, amount: 12000 },
+          { date: "2025-11-04", type: "FEE", amount: 54, feeKind: "TRADING" },
+          { date: "2026-03-31", type: "FEE", amount: 75, feeKind: "CUSTODY" },
+          { date: "2026-05-02", type: "DEPOSIT", amount: 20000 },
+          { date: "2026-05-03", type: "BUY", holding: "sp500", units: 50, amount: 16000 },
+          { date: "2026-06-15", type: "DIVIDEND", holding: "ta125", amount: 310 },
+          { date: "2026-09-30", type: "FEE", amount: 75, feeKind: "CUSTODY" },
+        ],
+        valuations: [
+          { asOf: "2026-01-31", values: { ta125: 15600, sp500: 27900, gov: 12100 } },
+          { asOf: "2026-04-30", values: { ta125: 16100, sp500: 28700, gov: 12150 } },
+          { asOf: "2026-07-31", values: { ta125: 16900, sp500: 46100, gov: 12300 } },
+          { asOf: "2026-10-31", values: { ta125: 17300, sp500: 48200, gov: 12380 } },
+        ],
+      },
+      deposits: [{ kind: "MONEY_MARKET_FUND", institution: "מור", label: "קרן כספית — כרית ביטחון", balance: 42000, ratePct: 4.1, feePct: 0.1 }],
+    },
     lines: halabi,
     closePeriods: ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"],
     learned: [],

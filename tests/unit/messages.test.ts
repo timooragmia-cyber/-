@@ -29,7 +29,7 @@ describe("i18n catalogs", () => {
     for (const file of [...walk("src/app"), ...walk("src/components")]) {
       const src = readFileSync(file, "utf8");
       if (!/getTranslations|useTranslations/.test(src)) continue;
-      const namespaces = [...src.matchAll(/(?:getTranslations|useTranslations)\("(\w+)"\)/g)].map((m) => m[1]!);
+      const namespaces = [...src.matchAll(/(?:getTranslations|useTranslations)\("([\w.]+)"\)/g)].map((m) => m[1]!);
       for (const m of src.matchAll(/\bt\("([a-zA-Z0-9_.]+)"/g)) {
         const candidates = [m[1]!, ...namespaces.map((n) => `${n}.${m[1]}`)];
         if (!candidates.some((k) => typeof resolve(k) === "string")) bad.push(`${file}: ${m[1]}`);

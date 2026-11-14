@@ -12,6 +12,8 @@ import { commitImport, createPreview, undoImport, uploadStatement } from "@/serv
 import { closeMonth } from "@/server/months";
 import { db } from "@/server/db";
 import { audit } from "@/server/audit";
+import * as invest from "@/server/invest/service";
+import { parseAmount } from "@/lib/money";
 import * as savings from "@/server/savings/service";
 import { accountDetailsSchema, balanceSchema, recordBalance, updateAccountDetails } from "@/server/accounts";
 
@@ -289,5 +291,75 @@ export async function importProductsAction(_p: ActionState, f: FormData) {
     if (r.issues.length) return { error: "savings.importIssues", values: { rows: r.issues.map((i) => `${i.row}:${i.field}`).slice(0, 10).join(", ") } };
     revalidatePath(`/advisor/clients/${h}`, "layout");
     return { ok: true, message: "savings.imported", values: { count: r.created } };
+  });
+}
+
+// ── Phase 3b: investments ───────────────────────────────────────────────────
+
+export async function savePropertyAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const v = invest.propertySchema.safeParse(obj(f));
+    if (!v.success) return { error: "form.invalid" };
+    await invest.saveProperty(u, h, v.data, String(f.get("propertyId") ?? "") || undefined);
+  });
+}
+
+export async function deleteInvestAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const kind = String(f.get("kind"));
+    if (!["property", "account", "deposit", "txn"].includes(kind)) return { error: "form.invalid" };
+    await invest.deleteEntity(u, h, kind as "property", String(f.get("id")));
+  });
+}
+
+export async function savePortfolioAccountAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u): Promise<ActionState> => {
+    const v = invest.accountSchema.safeParse(obj(f));
+    if (!v.success) return { error: "form.invalid" };
+    const r = await invest.saveAccount(u, h, v.data, String(f.get("accountId") ?? "") || undefined);
+    if (!r.ok) return { error: "invest.errors.target_sum" };
+    revalidatePath(`/advisor/clients/${h}`, "layout");
+    return { ok: true, message: "form.saved" };
+  });
+}
+
+export async function addHoldingAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const v = invest.holdingSchema.safeParse(obj(f));
+    if (!v.success) return { error: "form.invalid" };
+    await invest.addHolding(u, h, String(f.get("accountId")), v.data);
+  });
+}
+
+export async function addPortfolioTxnAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const v = invest.txnSchema.safeParse(obj(f));
+    if (!v.success) return { error: v.error.issues.some((i) => i.message === "holding_and_units_required") ? "invest.errors.holding_and_units" : "form.invalid" };
+    await invest.addTxn(u, h, String(f.get("accountId")), v.data);
+  });
+}
+
+export async function addValuationsAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const asOf = String(f.get("asOf") ?? "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(asOf)) return { error: "form.invalid" };
+    const values: { holdingId: string; value: bigint }[] = [];
+    for (const [k, v] of f.entries()) {
+      if (!k.startsWith("val_") || !String(v).trim()) continue;
+      try {
+        values.push({ holdingId: k.slice(4), value: parseAmount(String(v)) });
+      } catch {
+        return { error: "form.invalid" };
+      }
+    }
+    await invest.addValuations(u, h, String(f.get("accountId")), new Date(`${asOf}T00:00:00Z`), values);
+  });
+}
+
+export async function saveDepositAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const v = invest.depositSchema.safeParse(obj(f));
+    if (!v.success) return { error: "form.invalid" };
+    await invest.saveDeposit(u, h, v.data, String(f.get("depositId") ?? "") || undefined);
   });
 }

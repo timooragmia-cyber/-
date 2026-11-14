@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0] — Phase 3b: Investments and route comparison (2026-11-14)
+
+### Added
+- **Real estate**: properties with gross/net yield, equity, cash on equity, appreciation scenarios, and exit scenarios (today and at the horizon) through the betterment-tax calculator, selling costs and mortgage payoff.
+- **Securities portfolio**: accounts, holdings, transactions (deposit, withdrawal, buy, sell, dividend, interest, fees by kind, tax), monthly valuations; average-cost basis, realized/unrealized gains, unrealized-tax estimate, fees paid, allocation vs target with drift, time-weighted (chained Modified Dietz) and money-weighted (IRR, exact fixed-point) returns.
+- **Deposits & money-market funds**: net and real annual yield after fee and tax, liquidity.
+- **Route comparison** for an amount and horizon: after fees, after tax (tax rules), nominal and real annualized return, risk, liquidity, fit to the client's risk tolerance — preceded by the conservative-order checklist (emergency fund → expensive debt → fees → risk assessed) with the emergency-fund gap amount.
+- Investment assumptions and route definitions as advisor-owned, versioned parameters (unconfirmed, labeled as assumptions).
+- Emergency fund now counts money-market funds and deposits maturing within 90 days.
+- Demo: Halabi home with rental unit, brokerage portfolio, money-market fund; Khatib deposit.
+- Tests: 214 unit tests (investment examples documented in `docs/calculations/investments.md`) and Phase 3b E2E.
+
+### Fixed during build
+- IRR bisection lower bound underflowed on long horizons.
+- Exit scenarios beyond a rule's validity failed entirely; now today's exit is computed independently and future exits explicitly assume today's rules continue.
+
 ## [0.4.0] — Phase 3a: Tax engine and calculators (2026-11-14)
 
 ### Added

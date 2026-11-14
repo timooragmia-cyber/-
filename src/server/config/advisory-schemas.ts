@@ -25,5 +25,20 @@ export const ADVISORY_SCHEMAS: Record<string, z.ZodType> = {
       annuityFactorMilli: z.number().int().min(50_000).max(400_000),
     })
     .refine((v) => v.conservativeReturnPpm <= v.baseReturnPpm && v.baseReturnPpm <= v.optimisticReturnPpm, "scenarios must be ordered"),
+  "investment.assumptions": z.object({
+    expectedInflationPpm: z.number().int().min(-50_000).max(200_000),
+    sellingCostsPpm: z.number().int().min(0).max(100_000),
+    appreciationScenariosPpm: z.array(z.number().int().min(-100_000).max(200_000)).min(1).max(5),
+    exitHorizonYears: z.number().int().min(1).max(40),
+  }),
+  "investment.routes": z.array(z.object({
+    key: z.string().regex(/^[a-z_]{2,40}$/),
+    expectedReturnPpm: z.number().int().min(-100_000).max(300_000),
+    feePpm: z.number().int().min(0).max(100_000),
+    tax: z.enum(["DEPOSIT_UNLINKED", "MONEY_MARKET", "SECURITIES_REAL", "STUDY_FUND_EXEMPT"]),
+    risk: z.enum(["VERY_LOW", "LOW", "MEDIUM", "HIGH"]),
+    liquidity: z.enum(["DAILY", "AT_MATURITY", "YEARS"]),
+    maxAnnualContribution: z.number().int().min(0).nullable().optional(),
+  })).min(1).max(12),
   "cashflow.calendar": z.object({ lookbackMonths: z.number().int().min(2).max(12), minMonths: z.number().int().min(2).max(12), projectionDays: z.number().int().min(7).max(92) }),
 };

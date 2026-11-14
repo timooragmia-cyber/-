@@ -1,6 +1,6 @@
 # Unverified items (must be checked before relying on them)
 
-Updated: Phase 3a.
+Updated: Phase 3b.
 
 | # | Item | Where | Status | Owner / when |
 |---|---|---|---|---|
@@ -22,3 +22,7 @@ Updated: Phase 3a.
 | 16 | CPI series | `cpi_values` | **Empty** — the CBS host is blocked from the build environment, and values are never typed from memory. Import the CBS file on the CPI screen (single base enforced) | Advisor imports once, then monthly |
 | 17 | Known-index convention | Betterment / capital gains | Index known on a date = last month's from the 15th, else two months back. Advisor can override both indices per calculation | Advisor to confirm |
 | 18 | Calculator scope | Tax calculators | Betterment: residential apartment held by an individual only; capital gains on foreign securities use a simplified FX linkage; rental marginal tax assumes credit points are used by other income; study fund early withdrawal not computed | Out-of-scope cases are flagged on screen |
+| 19 | Investment assumptions | `investment.assumptions`, `investment.routes` | Expected returns per route, inflation 2.5%, selling costs 2.5%, appreciation 1%/3%/5% are **advisor assumptions awaiting confirmation** — not forecasts or market data | Advisor |
+| 20 | Future exit taxes | Real estate exit at horizon | Assumes today's tax rules stay in force; CPI projected from expected inflation (both stated on screen) | By design; re-run when rules change |
+| 21 | Portfolio returns and tax | Portfolio | TWR approximated from monthly valuations; unrealized tax uses nominal gain (upper bound); no live prices | By design (manual monthly valuations) |
+| 22 | Study-fund route cap | Route comparison | ₪20,566/yr (self-employed exempt deposit cap, secondary source) — salaried employees differ | Advisor to verify |

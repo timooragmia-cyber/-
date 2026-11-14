@@ -146,6 +146,9 @@ model Household {
   longTermProducts      LongTermProduct[]
   retirementAssumptions RetirementAssumptions?
   calculationRuns       CalculationRun[]
+  properties            Property[]
+  portfolioAccounts     PortfolioAccount[]
+  savingsDeposits       SavingsDeposit[]
 
   @@map("households")
 }
@@ -866,4 +869,158 @@ model CalculationRun {
 
   @@index([householdId, createdAt])
   @@map("calculation_runs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Module D — Investments (Phase 3b)
+// ─────────────────────────────────────────────────────────────
+
+enum PropertyUsage {
+  RESIDENCE
+  INVESTMENT
+}
+
+model Property {
+  id                     String        @id @default(cuid())
+  householdId            String
+  household              Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  label                  String
+  city                   String?
+  usage                  PropertyUsage
+  isOnlyApartment        Boolean       @default(false)
+  purchaseDate           DateTime      @db.Date
+  purchasePrice          BigInt
+  purchaseCosts          BigInt        @default(0)
+  improvementCosts       BigInt        @default(0)
+  currentValue           BigInt
+  valueAsOf              DateTime      @db.Date
+  monthlyRent            BigInt        @default(0)
+  monthlyExpenses        BigInt        @default(0)
+  // Until the mortgage module (Phase 4) links a mortgage record, these are entered manually.
+  mortgageBalance        BigInt        @default(0)
+  monthlyMortgagePayment BigInt        @default(0)
+  notes                  String?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  @@index([householdId])
+  @@map("properties")
+}
+
+enum AssetClass {
+  EQUITY_IL
+  EQUITY_FOREIGN
+  BONDS_GOV
+  BONDS_CORP
+  MONEY_MARKET
+  CASH
+  OTHER
+}
+
+model PortfolioAccount {
+  id               String    @id @default(cuid())
+  householdId      String
+  household        Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name             String
+  institution      String
+  // Target allocation: { "EQUITY_IL": 400000, ... } in ppm (sums to 1,000,000).
+  targetAllocation Json?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  holdings     PortfolioHolding[]
+  transactions PortfolioTxn[]
+
+  @@index([householdId])
+  @@map("portfolio_accounts")
+}
+
+model PortfolioHolding {
+  id         String           @id @default(cuid())
+  accountId  String
+  account    PortfolioAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  name       String
+  symbol     String?
+  assetClass AssetClass
+  createdAt  DateTime         @default(now())
+
+  valuations   HoldingValuation[]
+  transactions PortfolioTxn[]
+
+  @@index([accountId])
+  @@map("portfolio_holdings")
+}
+
+enum PortfolioTxnType {
+  DEPOSIT
+  WITHDRAWAL
+  BUY
+  SELL
+  DIVIDEND
+  INTEREST
+  FEE
+  TAX
+}
+
+enum FeeKind {
+  MANAGEMENT
+  TRADING
+  CUSTODY
+  OTHER
+}
+
+model PortfolioTxn {
+  id              String            @id @default(cuid())
+  accountId       String
+  account         PortfolioAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  holdingId       String?
+  holding         PortfolioHolding? @relation(fields: [holdingId], references: [id], onDelete: Cascade)
+  date            DateTime          @db.Date
+  type            PortfolioTxnType
+  // Micro-units (×1,000,000) for BUY/SELL; 0 otherwise.
+  units           BigInt            @default(0)
+  // Positive agorot (cash paid/received/charged).
+  amount          BigInt
+  feeKind         FeeKind?
+  note            String?
+  createdByUserId String
+  createdAt       DateTime          @default(now())
+
+  @@index([accountId, date])
+  @@map("portfolio_txns")
+}
+
+model HoldingValuation {
+  id        String           @id @default(cuid())
+  holdingId String
+  holding   PortfolioHolding @relation(fields: [holdingId], references: [id], onDelete: Cascade)
+  asOf      DateTime         @db.Date
+  value     BigInt
+
+  @@unique([holdingId, asOf])
+  @@map("holding_valuations")
+}
+
+enum DepositKind {
+  BANK_DEPOSIT
+  MONEY_MARKET_FUND
+}
+
+model SavingsDeposit {
+  id            String      @id @default(cuid())
+  householdId   String
+  household     Household   @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  kind          DepositKind
+  institution   String
+  label         String
+  balance       BigInt
+  balanceAsOf   DateTime    @db.Date
+  annualRatePpm Int // deposit rate, or the fund's recent annual yield (advisor input)
+  feePpm        Int         @default(0)
+  maturityDate  DateTime?   @db.Date
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([householdId])
+  @@map("savings_deposits")
 }

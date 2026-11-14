@@ -67,5 +67,16 @@ export const advisoryParameters: { key: string; value: unknown; description: str
   { key: "retirement.defaults", value: { retirementAge: 67, conservativeReturnPpm: 20000, baseReturnPpm: 35000, optimisticReturnPpm: 50000, depositGrowthPpm: 0, annuityFactorMilli: 200000 },
     description: "ברירות מחדל לתחזית פרישה: תשואה ריאלית 2%/3.5%/5% (אושר בעיקרון ע\"י היועץ), גיל 67 ומקדם המרה 200 — לאמת (גיל הפרישה תלוי במין ובשנת לידה; המקדם תלוי בקרן)" },
   { key: "cashflow.calendar", value: { lookbackMonths: 3, minMonths: 2, projectionDays: 35 }, description: "לוח תזרים: חלון 3 חודשים, פריט קבוע אם הופיע לפחות בחודשיים, תחזית 35 ימים" },
+  { key: "investment.assumptions", value: { expectedInflationPpm: 25000, sellingCostsPpm: 25000, appreciationScenariosPpm: [10000, 30000, 50000], exitHorizonYears: 10 },
+    description: "הנחות השקעה (לא תחזית): אינפלציה 2.5%, עלויות מכירת נכס 2.5% (תיווך+עו\"ד), תרחישי עליית ערך 1%/3%/5% לשנה, אופק יציאה 10 שנים — לאישור היועץ" },
+  { key: "investment.routes", value: [
+      { key: "deposit", expectedReturnPpm: 35000, feePpm: 0, tax: "DEPOSIT_UNLINKED", risk: "VERY_LOW", liquidity: "AT_MATURITY" },
+      { key: "money_market", expectedReturnPpm: 40000, feePpm: 1000, tax: "MONEY_MARKET", risk: "VERY_LOW", liquidity: "DAILY" },
+      { key: "gov_bonds_fund", expectedReturnPpm: 40000, feePpm: 2000, tax: "SECURITIES_REAL", risk: "LOW", liquidity: "DAILY" },
+      { key: "balanced_portfolio", expectedReturnPpm: 55000, feePpm: 3000, tax: "SECURITIES_REAL", risk: "MEDIUM", liquidity: "DAILY" },
+      { key: "equity_index", expectedReturnPpm: 70000, feePpm: 1000, tax: "SECURITIES_REAL", risk: "HIGH", liquidity: "DAILY" },
+      { key: "study_fund", expectedReturnPpm: 55000, feePpm: 5000, tax: "STUDY_FUND_EXEMPT", risk: "MEDIUM", liquidity: "YEARS", maxAnnualContribution: 2056600 },
+    ],
+    description: "מסלולי השוואה — תשואות צפויות הן הנחות של היועץ (לא תחזית ולא נתוני שוק). השתלמות: פטור בתנאים; תקרת 20,566 ₪ לשנה לעצמאי לפי מקור משני — לאמת" },
   { key: "health_score.weights", value: { savingsRate: 30, emergencyFund: 25, debtLoad: 25, fixedCostRatio: 20 }, description: "משקלות מדד הבריאות הפיננסית (סה\"כ 100) — שקוף ללקוח וליועץ" },
 ];

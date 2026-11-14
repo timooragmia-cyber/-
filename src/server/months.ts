@@ -157,12 +157,21 @@ export async function householdInsights(householdId: string) {
   const highlights = cur?.result && prev?.result && prev.period === addMonths(cur.period, -1) ? monthOverMonthHighlights(cur.result, prev.result, highlightParams) : [];
 
   const last3 = closed.slice(0, 3);
-  // Emergency fund = positive bank balances ÷ average monthly expenses (last 3 closed months).
+  // Emergency fund = liquid money ÷ average monthly expenses (last 3 closed months).
+  // Liquid = positive bank balances + money-market funds (daily liquidity) + deposits that
+  // mature within 90 days (or have no fixed maturity).
   const avgExpenses = last3.length ? last3.reduce((s, m) => s + m.totals.expenses, 0n) / BigInt(last3.length) : 0n;
-  const banks = await db.financialAccount.findMany({ where: { householdId, kind: "BANK_ACCOUNT" }, include: { balances: { orderBy: { asOf: "desc" }, take: 1 } } });
+  const [banks, deposits] = await Promise.all([
+    db.financialAccount.findMany({ where: { householdId, kind: "BANK_ACCOUNT" }, include: { balances: { orderBy: { asOf: "desc" }, take: 1 } } }),
+    db.savingsDeposit.findMany({ where: { householdId } }),
+  ]);
+  const soon = new Date(Date.now() + 90 * 86_400_000);
   const withBal = banks.filter((b) => b.balances[0]);
-  const liquid = withBal.reduce((s, b) => s + (b.balances[0]!.balance > 0n ? b.balances[0]!.balance : 0n), 0n);
-  const emergencyFundMonths = withBal.length && avgExpenses > 0n ? Number((liquid * 10n) / avgExpenses) / 10 : null;
+  const liquidDeposits = deposits.filter((d) => d.kind === "MONEY_MARKET_FUND" || d.maturityDate === null || d.maturityDate <= soon);
+  const liquid =
+    withBal.reduce((s, b) => s + (b.balances[0]!.balance > 0n ? b.balances[0]!.balance : 0n), 0n) +
+    liquidDeposits.reduce((s, d) => s + d.balance, 0n);
+  const emergencyFundMonths = (withBal.length || liquidDeposits.length) && avgExpenses > 0n ? Number((liquid * 10n) / avgExpenses) / 10 : null;
   const health = computeHealthScore(
     {
       savingsRatePpm: avg(last3.map((m) => m.totals.savingsRatePpm)),

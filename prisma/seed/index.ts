@@ -213,6 +213,36 @@ async function seedDemo(advisorId: string) {
       }
     }
 
+    // Phase 3b: investments
+    for (const pr of d.invest?.properties ?? []) {
+      await db.property.create({
+        data: {
+          householdId: h.id, label: pr.label, city: pr.city, usage: pr.usage, isOnlyApartment: pr.only, purchaseDate: new Date(`${pr.purchaseDate}T00:00:00Z`),
+          purchasePrice: agorot(pr.price), purchaseCosts: agorot(pr.costs), improvementCosts: agorot(pr.improvements), currentValue: agorot(pr.value), valueAsOf: new Date("2026-10-31T00:00:00Z"),
+          monthlyRent: agorot(pr.rent), monthlyExpenses: agorot(pr.expenses), mortgageBalance: agorot(pr.mortgage), monthlyMortgagePayment: agorot(pr.payment),
+        },
+      });
+    }
+    if (d.invest?.portfolio) {
+      const pf = d.invest.portfolio;
+      const acc = await db.portfolioAccount.create({ data: { householdId: h.id, name: pf.name, institution: pf.institution, targetAllocation: pf.target } });
+      const ids = new Map<string, string>();
+      for (const hd of pf.holdings) ids.set(hd.key, (await db.portfolioHolding.create({ data: { accountId: acc.id, name: hd.name, assetClass: hd.assetClass } })).id);
+      for (const tx of pf.txns) {
+        await db.portfolioTxn.create({
+          data: { accountId: acc.id, holdingId: tx.holding ? ids.get(tx.holding)! : null, date: new Date(`${tx.date}T00:00:00Z`), type: tx.type, units: BigInt(tx.units ?? 0) * 1_000_000n, amount: agorot(tx.amount), feeKind: tx.feeKind ?? null, createdByUserId: advisorId },
+        });
+      }
+      for (const v of pf.valuations) {
+        for (const [k, val] of Object.entries(v.values)) await db.holdingValuation.create({ data: { holdingId: ids.get(k)!, asOf: new Date(`${v.asOf}T00:00:00Z`), value: agorot(val) } });
+      }
+    }
+    for (const dp of d.invest?.deposits ?? []) {
+      await db.savingsDeposit.create({
+        data: { householdId: h.id, kind: dp.kind, institution: dp.institution, label: dp.label, balance: agorot(dp.balance), balanceAsOf: new Date("2026-10-31T00:00:00Z"), annualRatePpm: Math.round(dp.ratePct * 10_000), feePpm: Math.round(dp.feePct * 10_000), maturityDate: dp.maturity ? new Date(`${dp.maturity}T00:00:00Z`) : null },
+      });
+    }
+
     for (const b of d.budgets) {
       await db.budget.create({ data: { householdId: h.id, categoryId: catByKey.get(b.category)!.id, monthlyAmount: agorot(b.amount), effectiveFrom: "2026-05" } });
     }
