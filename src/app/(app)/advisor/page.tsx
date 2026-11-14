@@ -7,10 +7,17 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { formatMoney, type MoneyLocale } from "@/lib/money";
 import { requireAdvisor } from "@/server/auth/dal";
 import { listHouseholdsForAdvisor } from "@/server/households";
+import { db } from "@/server/db";
 
 export default async function AdvisorDashboard() {
   const user = await requireAdvisor();
-  const rows = await listHouseholdsForAdvisor(user);
+  const [rows, pending] = await Promise.all([
+    listHouseholdsForAdvisor(user),
+    db.uploadedFile.groupBy({ by: ["householdId"], where: { status: "PENDING_REVIEW" }, _count: true }),
+  ]);
+  const pendingBy = new Map(pending.map((p) => [p.householdId, p._count]));
+  const tNav = await getTranslations("nav");
+  const tDash = await getTranslations("dash");
   const t = await getTranslations("advisor");
   const locale = (await getLocale()) as MoneyLocale;
 
@@ -24,7 +31,10 @@ export default async function AdvisorDashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">{t("dashboardTitle")}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">{t("dashboardTitle")}</h1>
+        <Link href="/advisor/clients/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-brand-foreground">+ {tNav("newClient")}</Link>
+      </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {tiles.map((tile) => (
           <Card key={tile.label} className="p-4 sm:p-4">
@@ -60,6 +70,7 @@ export default async function AdvisorDashboard() {
                     <div className="flex flex-wrap items-center gap-1">
                       <StatusBadge status={r.status.status} />
                       {r.status.missingUpdate && r.status.status !== "NO_DATA" && <Badge tone="warn">{t("missingUpdate")}</Badge>}
+                      {pendingBy.get(r.id) ? <Badge tone="warn">{tDash("pendingUploads")}: {pendingBy.get(r.id)}</Badge> : null}
                     </div>
                     {r.latestSurplus !== null && (
                       <div className={`num mt-1 text-start text-xs ${r.latestSurplus < 0n ? "text-bad" : "text-ok"}`}>

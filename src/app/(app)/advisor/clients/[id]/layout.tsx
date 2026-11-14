@@ -1,0 +1,33 @@
+import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import { Tabs } from "@/components/app/tabs";
+import { requireAdvisor } from "@/server/auth/dal";
+import { db } from "@/server/db";
+
+export default async function ClientLayout({ children, params }: { children: React.ReactNode; params: Promise<{ id: string }> }) {
+  await requireAdvisor();
+  const { id } = await params;
+  const h = await db.household.findUnique({ where: { id }, select: { displayName: true, city: true } });
+  if (!h) notFound();
+  const t = await getTranslations("tabs");
+  const base = `/advisor/clients/${id}`;
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold">{h.displayName}</h1>
+        {h.city && <p className="text-sm text-muted">{h.city}</p>}
+      </div>
+      <Tabs
+        items={[
+          { href: base, label: t("overview"), exact: true },
+          { href: `${base}/profile`, label: t("profile") },
+          { href: `${base}/accounts`, label: t("accounts") },
+          { href: `${base}/transactions`, label: t("transactions") },
+          { href: `${base}/months`, label: t("months") },
+          { href: `${base}/tasks`, label: t("tasks") },
+        ]}
+      />
+      {children}
+    </div>
+  );
+}

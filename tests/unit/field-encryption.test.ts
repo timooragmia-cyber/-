@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { blindIndex, decryptField, encryptField, parseKeyRing } from "@/server/crypto/field-encryption";
+import { blindIndex, decryptBuffer, decryptField, encryptBuffer, encryptField, parseKeyRing } from "@/server/crypto/field-encryption";
 
 const k = () => randomBytes(32).toString("base64");
 
@@ -44,5 +44,12 @@ describe("field encryption", () => {
     const key = randomBytes(32);
     expect(blindIndex("123", key, "nid")).toBe(blindIndex("123", key, "nid"));
     expect(blindIndex("123", key, "nid")).not.toBe(blindIndex("123", key, "phone"));
+  });
+
+  it("encrypts files (binary) with AAD bound to the storage key", () => {
+    const data = randomBytes(5000);
+    const blob = encryptBuffer(data, ring, "ab/key.bin");
+    expect(decryptBuffer(blob, ring, "ab/key.bin").equals(data)).toBe(true);
+    expect(() => decryptBuffer(blob, ring, "cd/other.bin")).toThrow();
   });
 });

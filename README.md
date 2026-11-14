@@ -2,7 +2,7 @@
 
 Advisor workspace + client portal for household finances: monthly close, improvement tracking, fee reduction, and a prioritized savings & investment plan. Hebrew and Arabic, full RTL.
 
-> **Status: Phase 0 (foundation)** — see `CHANGELOG.md`. All figures in the UI are labeled *analysis for advisor review*. Tax and fee tables are intentionally empty until they are verified (`docs/UNVERIFIED.md`).
+> **Status: Phase 1 complete (clients, import, categorization, monthly close, tracking, portal)** — see `CHANGELOG.md`. All figures in the UI are labeled *analysis for advisor review*. Tax and fee tables are intentionally empty until they are verified (`docs/UNVERIFIED.md`).
 
 ## Quick start (local)
 
@@ -48,6 +48,10 @@ The app binds to `127.0.0.1:3000`. Put a TLS reverse proxy in front (see `docs/A
 - Every data access goes through `src/server/auth/dal.ts`.
 - No UI text in code: `messages/he.json` and `messages/ar.json` (keys must match).
 - Only fictional demo data. Never commit real client data or `.env`.
+
+## Trying the import
+
+Two fictional statement files live in `tests/fixtures/` (a bank CSV with title rows and a card XLSX with installments and a USD purchase). Create a client, add a bank account and a credit card, upload a file under *Accounts & import*, and follow the wizard. Regenerate them with `npx tsx tests/fixtures/generate-fixtures.ts`.
 
 ## Docs
 

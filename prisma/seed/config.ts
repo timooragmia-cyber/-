@@ -45,5 +45,8 @@ export const advisoryParameters: { key: string; value: unknown; description: str
   { key: "dashboard.trend_flat_threshold_ppm", value: 10000, description: "שינוי בשיעור חיסכון מתחת לסף זה (ppm, 10000=1%) נחשב יציב" },
   { key: "emergency_fund.months", value: { min: 3, target: 6 }, description: "קרן חירום: חודשי הוצאות קבועות+משתנות (ברירת מחדל שמרנית — לאישור היועץ)" },
   { key: "debt.expensive_threshold_ppm", value: null, description: "ריבית שנתית שמעליה חוב נחשב 'יקר' — לקביעת היועץ (ריק עד שייקבע)" },
+  { key: "recurring.detection", value: { minMonths: 3, tolerancePpm: 150000, lookbackMonths: 6 }, description: "זיהוי חיוב קבוע: לפחות 3 חודשים, סטייה עד 15% מהחציון, חלון 6 חודשים" },
+  { key: "highlights.thresholds", value: { minChangePpm: 100000, minChangeAgorot: 20000, max: 5 }, description: "הדגשות חודש מול חודש: שינוי של 10% לפחות וגם 200 ₪ לפחות, עד 5 הדגשות" },
+  { key: "health_score.targets", value: { savingsRateGoodPpm: 200000, fixedCostRatioGoodPpm: 500000, fixedCostRatioBadPpm: 800000, emergencyFundGoodMonths: 6 }, description: "יעדי מדד הבריאות: חיסכון 20% = 100; הוצאות קבועות עד 50% מההכנסה = 100, 80% ומעלה = 0" },
   { key: "health_score.weights", value: { savingsRate: 30, emergencyFund: 25, debtLoad: 25, fixedCostRatio: 20 }, description: "משקלות מדד הבריאות הפיננסית (סה\"כ 100) — שקוף ללקוח וליועץ" },
 ];

@@ -1,54 +1,95 @@
+import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
+import { ActionForm } from "@/components/app/action-form";
 import { StatusBadge } from "@/components/app/status-badge";
+import { HighlightsCard, TrendCard } from "@/components/app/insights";
+import { SpendBars } from "@/components/charts/trend-charts";
 import { Card, CardTitle } from "@/components/ui/card";
-import { formatMoney, formatPpmPercent, type MoneyLocale } from "@/lib/money";
+import { formatMoney, formatPpmPercent, toDisplayNumber } from "@/lib/money";
+import { audit } from "@/server/audit";
 import { requireClient } from "@/server/auth/dal";
 import { getHouseholdProfile } from "@/server/households";
+import { householdInsights, loadCategories } from "@/server/months";
+import { catName, type Loc } from "@/server/view";
+import { clientTaskStatusAction } from "./actions";
 
 /**
- * Client home. Design goal: the client understands their monthly status in 10 seconds —
- * one headline number (surplus/deficit), one status word, one savings rate. Nothing else above the fold.
+ * Client home. Goal: understand the month in 10 seconds — one headline number, one status,
+ * one savings rate above the fold. The portal shows CLOSED months only (advisor-reviewed),
+ * never live, unreviewed numbers.
  */
 export default async function PortalPage() {
   const user = await requireClient();
-  const h = await getHouseholdProfile(user, user.householdId);
+  const [h, insights, cats] = await Promise.all([getHouseholdProfile(user, user.householdId), householdInsights(user.householdId), loadCategories()]);
+  await audit({ action: "VIEW", actorUserId: user.id, actorRole: user.role, entityType: "Portal", householdId: user.householdId });
   const t = await getTranslations();
-  const locale = (await getLocale()) as MoneyLocale;
-  const latest = h?.snapshots[0];
+  const locale = (await getLocale()) as Loc;
+  const latest = insights.closed[0];
+  const names = new Map([...cats.values()].map((c) => [c.key, catName(c, locale)]));
+  const byKey = new Map([...cats.values()].map((c) => [c.key, c]));
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      <h1 className="text-2xl font-bold">{t("portal.hello", { name: user.displayName })}</h1>
+    <div className="mx-auto max-w-2xl space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-2xl font-bold">{t("portal.hello", { name: user.displayName })}</h1>
+        <Link href="/portal/upload" className="rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium">{t("portalMore.uploadCta")}</Link>
+      </div>
+
       <Card>
         <CardTitle>{t("portal.statusHeadline")}</CardTitle>
         {latest ? (
           <div className="space-y-2 text-center">
             <p className="num text-sm text-muted">{latest.period}</p>
-            <p className={`num text-4xl font-bold ${latest.surplus < 0n ? "text-bad" : "text-ok"}`}>
-              {formatMoney(latest.surplus, locale, { decimals: 0, signDisplay: "exceptZero" })}
+            <p className={`num text-4xl font-bold ${latest.totals.surplus < 0n ? "text-bad" : "text-ok"}`}>
+              {formatMoney(latest.totals.surplus, locale, { decimals: 0, signDisplay: "exceptZero" })}
             </p>
-            <StatusBadge status={latest.surplus < 0n ? "DEFICIT" : "SURPLUS"} />
+            <StatusBadge status={latest.totals.surplus < 0n ? "DEFICIT" : "SURPLUS"} />
             <p className="text-sm">
-              {t("portal.savingsRate")}: <span className="num">{formatPpmPercent(latest.savingsRatePpm, locale, 1)}</span>
+              {t("portal.savingsRate")}: <span className="num">{latest.totals.income > 0n ? formatPpmPercent(latest.totals.savingsRatePpm, locale, 1) : "—"}</span>
             </p>
           </div>
         ) : (
           <p className="text-muted">{t("portal.noDataYet")}</p>
         )}
       </Card>
-      <Card>
-        <CardTitle>{t("portal.yourTasks")}</CardTitle>
-        {h && h.actionItems.length > 0 ? (
-          <ul className="list-disc space-y-1 ps-5 text-sm">
+
+      {h && h.actionItems.length > 0 && (
+        <Card>
+          <CardTitle>{t("portal.yourTasks")}</CardTitle>
+          <ul className="space-y-3">
             {h.actionItems.map((a) => (
-              <li key={a.id}>{a.title}</li>
+              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span>{a.title}{a.status === "IN_PROGRESS" && <span className="text-muted"> · {t("tasks.status.IN_PROGRESS")}</span>}</span>
+                <span className="flex gap-2">
+                  {a.status === "OPEN" && (
+                    <ActionForm action={clientTaskStatusAction} submitLabel={t("portalMore.taskStart")} variant="outline">
+                      <input type="hidden" name="taskId" value={a.id} /><input type="hidden" name="status" value="IN_PROGRESS" />
+                    </ActionForm>
+                  )}
+                  <ActionForm action={clientTaskStatusAction} submitLabel={t("portalMore.taskDone")}>
+                    <input type="hidden" name="taskId" value={a.id} /><input type="hidden" name="status" value="DONE" />
+                  </ActionForm>
+                </span>
+              </li>
             ))}
           </ul>
-        ) : (
-          <p className="text-sm text-muted">{t("portal.noTasks")}</p>
-        )}
-      </Card>
-      <p className="text-xs text-muted">{t("portal.uploadSoon")}</p>
+        </Card>
+      )}
+
+      {latest?.result && latest.result.expenses.length > 0 && (
+        <Card>
+          <CardTitle>{t("portalMore.whereMoneyWent")}</CardTitle>
+          <SpendBars
+            locale={locale}
+            budgetLabel={t("month.budget")}
+            overLabel={t("month.overBudget")}
+            items={latest.result.expenses.slice(0, 8).map((l) => ({ label: catName(byKey.get(l.key), locale, l.key), amount: toDisplayNumber(l.amount), budget: l.budget === null ? null : toDisplayNumber(l.budget) }))}
+          />
+        </Card>
+      )}
+
+      {insights.highlights.length > 0 && <HighlightsCard insights={insights} categoryNames={names} />}
+      {insights.trend.length > 1 && <TrendCard insights={insights} defaultRange={3} />}
     </div>
   );
 }

@@ -52,3 +52,27 @@ export function decryptField(payload: string, ring: KeyRing, aad = ""): string {
 export function blindIndex(value: string, key: Buffer, namespace: string): string {
   return createHmac("sha256", key).update(`${namespace}\u0000${value}`).digest("base64url");
 }
+
+/** Binary variant for files: [keyIdLen(1)][keyId][iv(12)][tag(16)][ciphertext]. */
+export function encryptBuffer(plain: Buffer, ring: KeyRing, aad: string): Buffer {
+  const key = ring.keys.get(ring.activeId)!;
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", key, iv);
+  cipher.setAAD(Buffer.from(aad, "utf8"));
+  const ct = Buffer.concat([cipher.update(plain), cipher.final()]);
+  const id = Buffer.from(ring.activeId, "utf8");
+  return Buffer.concat([Buffer.from([id.length]), id, iv, cipher.getAuthTag(), ct]);
+}
+
+export function decryptBuffer(blob: Buffer, ring: KeyRing, aad: string): Buffer {
+  const idLen = blob.readUInt8(0);
+  const id = blob.subarray(1, 1 + idLen).toString("utf8");
+  const key = ring.keys.get(id);
+  if (!key) throw new Error(`Unknown encryption key id ${id}`);
+  const iv = blob.subarray(1 + idLen, 13 + idLen);
+  const tag = blob.subarray(13 + idLen, 29 + idLen);
+  const decipher = createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAAD(Buffer.from(aad, "utf8"));
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(blob.subarray(29 + idLen)), decipher.final()]);
+}

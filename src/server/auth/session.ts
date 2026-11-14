@@ -47,6 +47,7 @@ async function loadSession(token: string) {
           isActive: true,
           householdId: true,
           totpEnabledAt: true,
+          mustChangePassword: true,
         },
       },
     },

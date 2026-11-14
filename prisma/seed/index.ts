@@ -6,10 +6,15 @@ import { PrismaClient } from "../../src/generated/prisma/client";
 import { categories, merchantRules } from "./categories";
 import { advisoryParameters, CMA_SOURCE, feeBenchmarkKeys, taxRuleKeys } from "./config";
 import { demoHouseholds } from "./demo";
+import { categorize, compileRules, learnedRuleFor } from "../../src/lib/categorize/engine";
+import { assignDedupKeys } from "../../src/lib/import/dedup";
+import { computeMonthClose, serializeClose } from "../../src/lib/analysis/month-close";
+import { addMonths } from "../../src/lib/domain/period";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
 const ARGON = { memoryCost: 19456, timeCost: 2, parallelism: 1, outputLen: 32 } as const;
 const SEED_DATE = new Date("2026-01-01");
+const APPROVED_DEFAULTS = new Set(["emergency_fund.months", "monthly_close.grace_days", "dashboard.trend_flat_threshold_ppm"]);
 const agorot = (shekels: number) => BigInt(shekels) * 100n;
 
 function password(envName: string): { value: string; generated: boolean } {
@@ -50,7 +55,14 @@ async function seedReference() {
     await db.advisoryParameter.upsert({
       where: { key_effectiveFrom: { key: p.key, effectiveFrom: SEED_DATE } },
       update: {},
-      create: { key: p.key, value: p.value as object, description: p.description, effectiveFrom: SEED_DATE },
+      create: {
+        key: p.key,
+        value: p.value as object,
+        description: p.description,
+        effectiveFrom: SEED_DATE,
+        // Approved by the advisor on 2026-11-14 (Phase 1 kickoff): recorded as confirmed.
+        ...(APPROVED_DEFAULTS.has(p.key) ? { confirmedAt: new Date("2026-11-14T12:00:00Z") } : {}),
+      },
     });
   }
 }
@@ -71,6 +83,9 @@ async function seedDemo(advisorId: string) {
   if ((await db.household.count()) > 0) return [];
   const created: { email: string; password: string }[] = [];
   const demoPw = password("SEED_DEMO_CLIENT_PASSWORD");
+  const cats = await db.category.findMany();
+  const catByKey = new Map(cats.map((c) => [c.key, c]));
+  const closeCats = new Map(cats.map((c) => [c.id, { id: c.id, key: c.key, kind: c.kind, nature: c.nature }]));
 
   for (const d of demoHouseholds) {
     const h = await db.household.create({
@@ -94,30 +109,83 @@ async function seedDemo(advisorId: string) {
         data: { householdId: h.id, type: "DATA_PROCESSING", textVersion: "2026-01-draft", method: "SIGNED_FORM", grantedAt: new Date("2026-04-01"), recordedByUserId: advisorId },
       });
     }
-    for (const s of d.snapshots) {
-      const income = agorot(s.income);
-      const expenses = agorot(s.expenses);
-      const surplus = income - expenses;
-      const payload = { source: "seed-demo", note: "Totals only — produced by seed, not by a real month close", income: income.toString(), expenses: expenses.toString() };
+
+    // Accounts + transactions through the real pipeline: dedup keys → rules → learned rules.
+    for (const l of d.learned) {
+      const rule = learnedRuleFor(l.description, catByKey.get(l.category)!.id, h.id);
+      if (rule) await db.categorizationRule.create({ data: rule });
+    }
+    const compiled = compileRules(await db.categorizationRule.findMany({ where: { OR: [{ householdId: null }, { householdId: h.id }] } }));
+    const accountIds = new Map<string, { id: string; kind: "BANK_ACCOUNT" | "CREDIT_CARD" }>();
+    for (const a of d.accounts) {
+      const acc = await db.financialAccount.create({ data: { householdId: h.id, kind: a.kind, institution: a.institution, nickname: a.nickname, last4: a.last4 } });
+      accountIds.set(a.key, { id: acc.id, kind: a.kind });
+    }
+    const lines = d.lines();
+    for (const [key, acc] of accountIds) {
+      const mine = assignDedupKeys(lines.filter((l) => l.account === key));
+      const batch = await db.importBatch.create({
+        data: { householdId: h.id, accountId: acc.id, adapter: "seed:demo", fileName: "demo-generated", status: "COMMITTED", rowsTotal: mine.length, rowsImported: mine.length, createdByUserId: advisorId, committedAt: new Date("2026-10-15") },
+      });
+      await db.transaction.createMany({
+        data: mine.map((l) => {
+          const manual = d.manual.find((m) => l.description.includes(m.descriptionContains));
+          const cat = manual ? { categoryId: catByKey.get(manual.category)!.id, source: "MANUAL" as const } : (() => {
+            const r = categorize(l.description, compiled);
+            return r ? { categoryId: r.categoryId, source: r.source } : null;
+          })();
+          return {
+            householdId: h.id,
+            accountId: acc.id,
+            importBatchId: batch.id,
+            date: new Date(`${l.date}T00:00:00Z`),
+            chargeDate: l.chargeDate ? new Date(`${l.chargeDate}T00:00:00Z`) : null,
+            amount: l.amount,
+            description: l.description,
+            categoryId: cat?.categoryId ?? null,
+            categorySource: cat?.source ?? "NONE",
+            isTransfer: cat ? closeCats.get(cat.categoryId)!.kind === "TRANSFER" : false,
+            installmentNumber: l.installmentNumber ?? null,
+            installmentTotal: l.installmentTotal ?? null,
+            dedupKey: l.dedupKey,
+          };
+        }),
+      });
+    }
+    for (const b of d.budgets) {
+      await db.budget.create({ data: { householdId: h.id, categoryId: catByKey.get(b.category)!.id, monthlyAmount: agorot(b.amount), effectiveFrom: "2026-05" } });
+    }
+
+    // Close months with the same code the advisor uses (immutable snapshots).
+    for (const period of d.closePeriods) {
+      const start = new Date(`${period}-01T00:00:00Z`);
+      const end = new Date(`${addMonths(period, 1)}-01T00:00:00Z`);
+      const txns = await db.transaction.findMany({
+        where: { householdId: h.id, OR: [{ chargeDate: { gte: start, lt: end } }, { chargeDate: null, date: { gte: start, lt: end } }] },
+        include: { account: { select: { kind: true } } },
+      });
+      const budgets = new Map((await db.budget.findMany({ where: { householdId: h.id, effectiveFrom: { lte: period } } })).map((b) => [b.categoryId, b.monthlyAmount]));
+      const r = computeMonthClose(period, txns.map((t) => ({ id: t.id, amount: t.amount, categoryId: t.categoryId, isTransfer: t.isTransfer, accountKind: t.account.kind })), closeCats, budgets);
+      const payload = serializeClose(r);
       await db.monthlySnapshot.create({
         data: {
           householdId: h.id,
-          period: s.period,
-          totalIncome: income,
-          totalExpenses: expenses,
-          surplus,
-          savingsRatePpm: Number((surplus * 1_000_000n) / income),
-          payload,
-          calcVersion: "seed-demo",
+          period,
+          totalIncome: r.totalIncome,
+          totalExpenses: r.totalExpenses,
+          surplus: r.surplus,
+          savingsRatePpm: r.savingsRatePpm ?? 0,
+          payload: payload as object,
+          calcVersion: r.calcVersion,
           contentSha256: createHash("sha256").update(JSON.stringify(payload)).digest("hex"),
           closedByUserId: advisorId,
-          closedAt: new Date(`${s.period}-28T12:00:00Z`),
+          closedAt: new Date(`${addMonths(period, 1)}-08T12:00:00Z`),
         },
       });
     }
-    for (const title of d.tasks) {
-      await db.actionItem.create({ data: { householdId: h.id, title, createdByUserId: advisorId, period: "2026-10" } });
-    }
+
+    for (const body of d.notes) await db.advisorNote.create({ data: { householdId: h.id, body, createdByUserId: advisorId, period: "2026-10" } });
+    for (const title of d.tasks) await db.actionItem.create({ data: { householdId: h.id, title, createdByUserId: advisorId, period: "2026-10" } });
     if (d.clientLogin) {
       const primary = h.members.find((m) => m.memberRole === "PRIMARY");
       await db.user.create({

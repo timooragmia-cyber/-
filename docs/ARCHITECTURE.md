@@ -1,6 +1,6 @@
 # Architecture — T.A Mortgages Financial Platform
 
-Status: **Phase 0 (foundation)**. This document is the contract for every later phase.
+Status: **Phase 1** (import, categorization, monthly close, tracking). This document is the contract for every later phase.
 
 ## 1. Product shape
 
@@ -82,7 +82,7 @@ Three versioned tables, each row with `effectiveFrom/effectiveTo`, source and ve
 
 Calculations always call `selectEffective(rows, eventDate)`. It refuses overlapping rows instead of guessing. Calculators will **refuse to run** on a MISSING rule, and show a warning on an UNVERIFIED one. Every result screen shows the rule version used.
 
-## 6. Import architecture (built in Phase 1)
+## 6. Import architecture (implemented in Phase 1)
 
 ```
 FileUpload ─▶ Adapter (file:csv | file:xlsx | later openbanking:<provider>)
@@ -92,7 +92,15 @@ FileUpload ─▶ Adapter (file:csv | file:xlsx | later openbanking:<provider>)
           ─▶ Preview with errors (ImportBatch.status = PREVIEW) ─▶ Commit ─▶ Undo (delete batch rows)
 ```
 
-The adapter interface is `(source) → AsyncIterable<RawRow>` plus metadata. Open-banking providers plug in as another adapter without touching mapping, dedup or categorization.
+The adapter interface (`ImportAdapter` in `src/lib/import/types.ts`) is `canHandle(file)` + `read(file) → RawTable[]`; file adapters live in `src/server/import/adapters.ts`. Uploaded files are stored encrypted (`src/server/storage.ts`). Open-banking providers plug in as another adapter without touching mapping, dedup or categorization.
+
+## 6a. Month-close rules (documented in code and tests)
+
+- A transaction belongs to the month of its **charge date** when present (cards), else its date.
+- Transfers (card payment from the bank, savings transfer, own-account transfer) are excluded; card spending is counted from card lines.
+- Refunds reduce their category. Uncategorized lines are counted and block nothing, but raise a warning.
+- Closing writes an immutable snapshot (new version on re-close) with the full breakdown, calc version and a hash of the transactions used. If the data later changes, the screen says so.
+- The client portal shows **closed months only**, never live unreviewed numbers.
 
 ## 7. Deployment (summary; the full guide comes in Phase 5)
 

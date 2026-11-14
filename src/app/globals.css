@@ -24,6 +24,13 @@
   --bad: #b42318;
   --bad-bg: #fde8e7;
   --focus: #2563eb;
+  /* Chart roles (validated with the dataviz palette validator: CVD + contrast pass on light surface) */
+  --viz-surface: #fcfcfb;
+  --viz-series-1: #2a78d6; /* income / positive pole */
+  --viz-series-2: #eb6834; /* expenses */
+  --viz-negative: #e34948; /* deficit pole (diverging) */
+  --viz-grid: #e6e5e1;
+  --viz-axis: #52514e;
 }
 
 @theme inline {
@@ -41,6 +48,9 @@
   --color-warn-bg: var(--warn-bg);
   --color-bad: var(--bad);
   --color-bad-bg: var(--bad-bg);
+  --color-viz-1: var(--viz-series-1);
+  --color-viz-2: var(--viz-series-2);
+  --color-viz-neg: var(--viz-negative);
   --font-sans: "Noto Sans Hebrew Variable", "Noto Sans Arabic Variable", system-ui, sans-serif;
 }
 

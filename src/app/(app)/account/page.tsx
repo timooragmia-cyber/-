@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,10 @@ export default async function AccountPage() {
       <Card>
         <CardTitle>{t("account.twoFactor")}</CardTitle>
         <Badge tone={user.totpEnabled ? "ok" : "neutral"}>{t(user.totpEnabled ? "account.enabled" : "account.disabled")}</Badge>
+      </Card>
+      <Card>
+        <CardTitle>{t("pwd.title")}</CardTitle>
+        <Link href="/account/password" className="font-medium text-brand underline">{t("pwd.submit")}</Link>
       </Card>
     </div>
   );

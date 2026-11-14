@@ -19,6 +19,7 @@ export type CurrentUser = {
   householdId: string | null;
   sessionId: string;
   totpEnabled: boolean;
+  mustChangePassword: boolean;
 };
 
 export { requiresSecondFactor } from "./dal-guards";
@@ -37,6 +38,7 @@ const getAuthState = cache(async (): Promise<{ user: CurrentUser; secondFactorDo
       householdId: s.user.householdId,
       sessionId: s.id,
       totpEnabled: s.user.totpEnabledAt !== null,
+      mustChangePassword: s.user.mustChangePassword,
     },
   };
 });
@@ -46,13 +48,17 @@ export async function getPartialUser(): Promise<{ user: CurrentUser; secondFacto
   return getAuthState();
 }
 
-/** Fully authenticated user (password + second factor where required). */
-export async function requireUser(): Promise<CurrentUser> {
+/**
+ * Fully authenticated user (password + second factor where required).
+ * Users with a temporary password are sent to change it first (except on that page).
+ */
+export async function requireUser(opts: { allowPasswordChangePending?: boolean } = {}): Promise<CurrentUser> {
   const state = await getAuthState();
   if (!state) redirect("/login");
   const { user } = state;
   if (user.role === "ADVISOR" && !user.totpEnabled) redirect("/login/setup-2fa");
   if (requiresSecondFactor(user.role, user.totpEnabled) && !state.secondFactorDone) redirect("/login/2fa");
+  if (user.mustChangePassword && !opts.allowPasswordChangePending) redirect("/account/password");
   return user;
 }
 

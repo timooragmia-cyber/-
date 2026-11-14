@@ -3,7 +3,8 @@
  * people is coincidental. E-mails use the reserved ".test" TLD so nothing can be delivered.
  * Amounts in agorot (×100).
  */
-type DemoSnapshot = { period: string; income: number; expenses: number }; // whole shekels
+import type { GenLine } from "./generate";
+import { halabi, khatib, osman } from "./generate";
 
 export type DemoHousehold = {
   displayName: string;
@@ -16,7 +17,16 @@ export type DemoHousehold = {
   goals: { title: string; target: number; targetDate?: string }[];
   consent: boolean;
   clientLogin?: { email: string; displayName: string; locale: "he" | "ar" };
-  snapshots: DemoSnapshot[];
+  accounts: { key: string; kind: "BANK_ACCOUNT" | "CREDIT_CARD"; institution: "LEUMI" | "DISCOUNT" | "HAPOALIM" | "MAX" | "ISRACARD"; nickname: string; last4: string }[];
+  lines: () => GenLine[];
+  /** Months closed by the advisor in the demo (others stay open). */
+  closePeriods: string[];
+  /** Simulates the advisor teaching the system once ("apply to similar"). */
+  learned: { description: string; category: string }[];
+  /** One-off manual categorizations by the advisor. */
+  manual: { descriptionContains: string; category: string }[];
+  budgets: { category: string; amount: number }[];
+  notes: string[];
   tasks: string[];
 };
 
@@ -44,14 +54,16 @@ export const demoHouseholds: DemoHousehold[] = [
     ],
     consent: true,
     clientLogin: { email: "samer.demo@example.test", displayName: "سامر", locale: "ar" },
-    snapshots: [
-      { period: "2026-05", income: 25100, expenses: 28900 },
-      { period: "2026-06", income: 26800, expenses: 28100 },
-      { period: "2026-07", income: 24900, expenses: 27300 },
-      { period: "2026-08", income: 27400, expenses: 27900 },
-      { period: "2026-09", income: 26100, expenses: 25600 },
-      { period: "2026-10", income: 26600, expenses: 24800 },
+    accounts: [
+      { key: "bank", kind: "BANK_ACCOUNT", institution: "LEUMI", nickname: "לאומי עו\"ש", last4: "4821" },
+      { key: "max", kind: "CREDIT_CARD", institution: "MAX", nickname: "מקס — סאמר", last4: "1190" },
     ],
+    lines: khatib,
+    closePeriods: ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"],
+    learned: [{ description: "העברה - לקוח עבודות חשמל", category: "income_business" }],
+    manual: [{ descriptionContains: "חתונה", category: "events_gifts" }],
+    budgets: [{ category: "groceries", amount: 2600 }, { category: "leisure", amount: 600 }, { category: "transport", amount: 1100 }],
+    notes: ["פגישה ראשונה: הכנסה לא קבועה מהעסק. סוכם על תקציב מזון ומעקב חודשי.", "ספטמבר: חודש ראשון בעודף. בוטל מנוי Apple; ממליץ לבדוק גם את Spotify."],
     tasks: ["إلغاء اشتراكين غير مستخدمين", "تحويل تلقائي 1,000 ₪ شهريًا للادخار", "إرسال كشوف بطاقة Max لشهر 10"],
   },
   {
@@ -73,14 +85,16 @@ export const demoHouseholds: DemoHousehold[] = [
     goals: [{ title: "לימודים אקדמיים לעדי", target: 90000, targetDate: "2028-09-01" }],
     consent: true,
     clientLogin: { email: "wael.demo@example.test", displayName: "ואיל", locale: "he" },
-    snapshots: [
-      { period: "2026-05", income: 35500, expenses: 31900 },
-      { period: "2026-06", income: 35500, expenses: 33200 },
-      { period: "2026-07", income: 36100, expenses: 37400 },
-      { period: "2026-08", income: 35500, expenses: 32100 },
-      { period: "2026-09", income: 35500, expenses: 30900 },
-      { period: "2026-10", income: 35800, expenses: 30600 },
+    accounts: [
+      { key: "bank", kind: "BANK_ACCOUNT", institution: "DISCOUNT", nickname: "דיסקונט משותף", last4: "3307" },
+      { key: "isracard", kind: "CREDIT_CARD", institution: "ISRACARD", nickname: "ישראכרט משפחתי", last4: "7752" },
     ],
+    lines: halabi,
+    closePeriods: ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"],
+    learned: [],
+    manual: [{ descriptionContains: "איסתא", category: "leisure" }],
+    budgets: [],
+    notes: ["משפחה בעודף יציב. השלב הבא: בדיקת דמי ניהול בקרן ההשתלמות ובקופה (שלב 2)."],
     tasks: ["בדיקת דמי ניהול בקרן ההשתלמות"],
   },
   {
@@ -96,11 +110,13 @@ export const demoHouseholds: DemoHousehold[] = [
     income: [{ label: "راتب + عمل حر", type: "SALARY", net: 18400, gross: 23900 }],
     goals: [],
     consent: true,
-    snapshots: [
-      { period: "2026-06", income: 18400, expenses: 21300 },
-      { period: "2026-07", income: 18400, expenses: 20100 },
-      { period: "2026-08", income: 18900, expenses: 21800 },
-    ],
+    accounts: [{ key: "bank", kind: "BANK_ACCOUNT", institution: "HAPOALIM", nickname: "הפועלים עו\"ש", last4: "6604" }],
+    lines: osman,
+    closePeriods: ["2026-06", "2026-07", "2026-08"],
+    learned: [{ description: "העברה - עבודה פרטית", category: "income_business" }],
+    manual: [],
+    budgets: [],
+    notes: [],
     tasks: [],
   },
   {
@@ -116,7 +132,13 @@ export const demoHouseholds: DemoHousehold[] = [
     income: [],
     goals: [],
     consent: false,
-    snapshots: [],
+    accounts: [],
+    lines: () => [],
+    closePeriods: [],
+    learned: [],
+    manual: [],
+    budgets: [],
+    notes: [],
     tasks: [],
   },
 ];

@@ -5,6 +5,7 @@ import { requireUser } from "@/server/auth/dal";
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireUser();
+  // Pages enforce their own checks; the layout only needs a logged-in user for the shell.
+  const user = await requireUser({ allowPasswordChangePending: true });
   return <AppShell user={user}>{children}</AppShell>;
 }

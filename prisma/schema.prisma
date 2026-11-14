@@ -33,24 +33,26 @@ enum Locale {
 }
 
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  passwordHash      String
-  role              Role
-  displayName       String
-  locale            Locale    @default(he)
-  isActive          Boolean   @default(true)
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  passwordHash       String
+  role               Role
+  displayName        String
+  locale             Locale    @default(he)
+  isActive           Boolean   @default(true)
   // TOTP secret, encrypted with field-level encryption (AES-256-GCM). Never plaintext.
-  totpSecretEnc     String?
-  totpEnabledAt     DateTime?
+  totpSecretEnc      String?
+  totpEnabledAt      DateTime?
   // Last accepted TOTP time-step: codes at or below it are rejected (replay protection).
-  totpLastCounter   BigInt?
-  failedLoginCount  Int       @default(0)
-  lockedUntil       DateTime?
-  lastLoginAt       DateTime?
-  passwordChangedAt DateTime  @default(now())
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  totpLastCounter    BigInt?
+  failedLoginCount   Int       @default(0)
+  lockedUntil        DateTime?
+  lastLoginAt        DateTime?
+  passwordChangedAt  DateTime  @default(now())
+  // Set when the advisor creates the login with a temporary password.
+  mustChangePassword Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   // CLIENT users belong to exactly one household. ADVISOR users have none.
   householdId String?
@@ -396,6 +398,10 @@ model ImportBatch {
   rowsDuplicate   Int              @default(0)
   rowsError       Int              @default(0)
   errors          Json?
+  // Normalized rows (amounts as strings) kept while status = PREVIEW, cleared on commit.
+  preview         Json?
+  fileName        String?
+  sheetName       String?
   createdByUserId String
   createdAt       DateTime         @default(now())
   committedAt     DateTime?
@@ -660,15 +666,18 @@ model FeeBenchmark {
 // Advisory thresholds that are policy, not law (emergency-fund months,
 // health-score weights, "expensive debt" threshold, etc.).
 model AdvisoryParameter {
-  id              String    @id @default(cuid())
-  key             String
-  value           Json
-  effectiveFrom   DateTime  @db.Date
-  effectiveTo     DateTime? @db.Date
-  description     String?
-  updatedByUserId String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  key               String
+  value             Json
+  effectiveFrom     DateTime  @db.Date
+  effectiveTo       DateTime? @db.Date
+  description       String?
+  updatedByUserId   String?
+  // Professional defaults must be confirmed by the advisor before they are trusted.
+  confirmedByUserId String?
+  confirmedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@unique([key, effectiveFrom])
   @@map("advisory_parameters")

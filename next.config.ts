@@ -21,7 +21,11 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
-  serverExternalPackages: ["@node-rs/argon2"],
+  serverExternalPackages: ["@node-rs/argon2", "exceljs"],
+  experimental: {
+    // Statement uploads go through server actions; files are capped at 10MB in code (adapters.ts).
+    serverActions: { bodySizeLimit: "11mb" },
+  },
   turbopack: {
     rules: {
       "*.css": {
