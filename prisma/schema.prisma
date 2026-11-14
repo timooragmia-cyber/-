@@ -1,0 +1,716 @@
+// T.A Mortgages — Financial Management & Investment Platform
+// Data model conventions (enforced in review, see docs/ARCHITECTURE.md):
+//   * Money: BigInt, integer agorot (1 ILS = 100 agorot). Never Float/Decimal for money.
+//   * Rates: Int, parts-per-million (ppm). 1% = 10_000 ppm, 0.22% = 2_200 ppm.
+//   * Calendar dates without time (transaction date, effective dates): @db.Date.
+//   * Periods (month): "YYYY-MM" string.
+//   * Tax rates, fee benchmarks and thresholds are NEVER hardcoded: they live in
+//     TaxRule / FeeBenchmark / AdvisoryParameter with effective dates and sources.
+//   * Phase 2+ entities (pension products, mortgages, investments) are designed in
+//     docs/ERD.md and are added in their phase.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────
+// Identity, auth, sessions
+// ─────────────────────────────────────────────────────────────
+
+enum Role {
+  ADVISOR
+  CLIENT
+}
+
+enum Locale {
+  he
+  ar
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  passwordHash      String
+  role              Role
+  displayName       String
+  locale            Locale    @default(he)
+  isActive          Boolean   @default(true)
+  // TOTP secret, encrypted with field-level encryption (AES-256-GCM). Never plaintext.
+  totpSecretEnc     String?
+  totpEnabledAt     DateTime?
+  // Last accepted TOTP time-step: codes at or below it are rejected (replay protection).
+  totpLastCounter   BigInt?
+  failedLoginCount  Int       @default(0)
+  lockedUntil       DateTime?
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // CLIENT users belong to exactly one household. ADVISOR users have none.
+  householdId String?
+  household   Household? @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  personId    String?    @unique
+  person      Person?    @relation(fields: [personId], references: [id], onDelete: SetNull)
+
+  sessions      Session[]
+  recoveryCodes RecoveryCode[]
+
+  @@index([householdId])
+  @@map("users")
+}
+
+model Session {
+  id               String   @id @default(cuid())
+  // SHA-256 of the random token stored in the cookie. The raw token is never stored.
+  tokenHash        String   @unique
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // false until the second factor is verified (or 2FA is not required for this user).
+  secondFactorDone Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  lastSeenAt       DateTime @default(now())
+  expiresAt        DateTime
+  ip               String?
+  userAgent        String?
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model RecoveryCode {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("recovery_codes")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Module A — Clients & households
+// ─────────────────────────────────────────────────────────────
+
+enum HouseholdStatus {
+  ONBOARDING
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum RiskTolerance {
+  VERY_LOW
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Household {
+  id              String          @id @default(cuid())
+  displayName     String
+  status          HouseholdStatus @default(ONBOARDING)
+  preferredLocale Locale          @default(he)
+  // Assigned by the advisor, never self-selected by the client.
+  riskTolerance   RiskTolerance?
+  riskAssessedAt  DateTime?
+  city            String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  archivedAt      DateTime?
+
+  members             Person[]
+  users               User[]
+  incomeSources       IncomeSource[]
+  goals               Goal[]
+  consents            Consent[]
+  accounts            FinancialAccount[]
+  transactions        Transaction[]
+  importBatches       ImportBatch[]
+  uploadedFiles       UploadedFile[]
+  snapshots           MonthlySnapshot[]
+  notes               AdvisorNote[]
+  actionItems         ActionItem[]
+  budgets             Budget[]
+  categorizationRules CategorizationRule[]
+  importMappings      ImportMapping[]
+
+  @@map("households")
+}
+
+enum MemberRole {
+  PRIMARY
+  SPOUSE
+  DEPENDENT
+  OTHER
+}
+
+enum EmploymentType {
+  SALARIED
+  SELF_EMPLOYED
+  BOTH
+  NOT_EMPLOYED
+  RETIRED
+}
+
+model Person {
+  id              String          @id @default(cuid())
+  householdId     String
+  household       Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  firstName       String
+  lastName        String
+  memberRole      MemberRole
+  birthYear       Int?
+  employmentType  EmploymentType?
+  // Israeli ID number: field-level encrypted + HMAC blind index for exact lookup.
+  // Optional — collected only when needed (data minimization).
+  nationalIdEnc   String?
+  nationalIdIndex String?         @unique
+  phone           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user          User?
+  incomeSources IncomeSource[]
+  accounts      FinancialAccount[]
+
+  @@index([householdId])
+  @@map("persons")
+}
+
+enum IncomeType {
+  SALARY
+  SELF_EMPLOYMENT
+  BONUS
+  RENTAL
+  PENSION
+  ALLOWANCE
+  OTHER
+}
+
+enum Regularity {
+  FIXED
+  IRREGULAR
+}
+
+model IncomeSource {
+  id           String     @id @default(cuid())
+  householdId  String
+  household    Household  @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  personId     String?
+  person       Person?    @relation(fields: [personId], references: [id], onDelete: SetNull)
+  type         IncomeType
+  label        String
+  grossMonthly BigInt? // agorot
+  netMonthly   BigInt? // agorot
+  regularity   Regularity @default(FIXED)
+  activeFrom   DateTime?  @db.Date
+  activeTo     DateTime?  @db.Date
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([householdId])
+  @@map("income_sources")
+}
+
+enum GoalStatus {
+  ACTIVE
+  ACHIEVED
+  DROPPED
+}
+
+model Goal {
+  id           String     @id @default(cuid())
+  householdId  String
+  household    Household  @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  title        String
+  targetAmount BigInt // agorot
+  targetDate   DateTime?  @db.Date
+  priority     Int        @default(0)
+  status       GoalStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([householdId])
+  @@map("goals")
+}
+
+enum ConsentType {
+  DATA_PROCESSING
+  STATEMENT_IMPORT
+  REPORT_DELIVERY_EMAIL
+}
+
+enum ConsentMethod {
+  SIGNED_FORM
+  PORTAL_ACCEPTANCE
+  RECORDED_VERBAL
+}
+
+model Consent {
+  id               String        @id @default(cuid())
+  householdId      String
+  household        Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  personId         String?
+  type             ConsentType
+  // Version of the consent text the client agreed to (docs/legal/consent-*.md).
+  textVersion      String
+  method           ConsentMethod
+  grantedAt        DateTime
+  revokedAt        DateTime?
+  recordedByUserId String
+  documentRef      String?
+  createdAt        DateTime      @default(now())
+
+  @@index([householdId])
+  @@map("consents")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Accounts & import pipeline (Module B input; Module C extends accounts in Phase 2)
+// ─────────────────────────────────────────────────────────────
+
+enum AccountKind {
+  BANK_ACCOUNT
+  CREDIT_CARD
+  CASH
+}
+
+// Institutions with import presets. OTHER uses the custom mapping wizard.
+enum Institution {
+  LEUMI
+  HAPOALIM
+  DISCOUNT
+  MIZRAHI_TEFAHOT
+  ISRACARD
+  CAL
+  MAX
+  OTHER
+}
+
+model FinancialAccount {
+  id            String      @id @default(cuid())
+  householdId   String
+  household     Household   @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  ownerPersonId String?
+  ownerPerson   Person?     @relation(fields: [ownerPersonId], references: [id], onDelete: SetNull)
+  kind          AccountKind
+  institution   Institution
+  nickname      String
+  // Last 4 digits ONLY. Full account/card numbers are never stored.
+  last4         String?     @db.VarChar(4)
+  currency      String      @default("ILS") @db.Char(3)
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  transactions  Transaction[]
+  importBatches ImportBatch[]
+
+  @@index([householdId])
+  @@map("financial_accounts")
+}
+
+enum FilePurpose {
+  STATEMENT
+  PENSION_REPORT
+  OTHER
+}
+
+enum UploadStatus {
+  PENDING_REVIEW
+  IMPORTED
+  REJECTED
+}
+
+// Files uploaded by clients or advisor. Clients can upload; only the advisor imports.
+model UploadedFile {
+  id               String       @id @default(cuid())
+  householdId      String
+  household        Household    @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  uploadedByUserId String
+  originalName     String
+  mimeType         String
+  sizeBytes        Int
+  sha256           String
+  storageKey       String       @unique // path in encrypted file storage, never user-controlled
+  purpose          FilePurpose
+  status           UploadStatus @default(PENDING_REVIEW)
+  createdAt        DateTime     @default(now())
+
+  importBatches ImportBatch[]
+
+  @@index([householdId])
+  @@map("uploaded_files")
+}
+
+// Remembered column mapping per source (preset or custom wizard).
+model ImportMapping {
+  id          String      @id @default(cuid())
+  // null = global preset shipped with the app
+  householdId String?
+  household   Household?  @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  institution Institution
+  name        String
+  // { headerRow, dateColumn, dateFormat, amountColumns, descriptionColumn, ... } — see src/server/import/mapping.ts
+  config      Json
+  isPreset    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  batches ImportBatch[]
+
+  @@index([householdId])
+  @@map("import_mappings")
+}
+
+enum ImportStatus {
+  PREVIEW
+  COMMITTED
+  UNDONE
+  FAILED
+}
+
+model ImportBatch {
+  id              String           @id @default(cuid())
+  householdId     String
+  household       Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  accountId       String
+  account         FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  fileId          String?
+  file            UploadedFile?    @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  mappingId       String?
+  mapping         ImportMapping?   @relation(fields: [mappingId], references: [id], onDelete: SetNull)
+  // Which adapter produced this batch: "file:csv", "file:xlsx", later "openbanking:<provider>".
+  adapter         String
+  status          ImportStatus     @default(PREVIEW)
+  rowsTotal       Int              @default(0)
+  rowsImported    Int              @default(0)
+  rowsDuplicate   Int              @default(0)
+  rowsError       Int              @default(0)
+  errors          Json?
+  createdByUserId String
+  createdAt       DateTime         @default(now())
+  committedAt     DateTime?
+  undoneAt        DateTime?
+
+  transactions Transaction[]
+
+  @@index([householdId])
+  @@map("import_batches")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Module B — Transactions, categorization, monthly close
+// ─────────────────────────────────────────────────────────────
+
+enum CategoryKind {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum SpendNature {
+  FIXED
+  VARIABLE
+  DISCRETIONARY
+}
+
+model Category {
+  id        String       @id @default(cuid())
+  key       String       @unique // stable code key, e.g. "groceries"
+  parentId  String?
+  parent    Category?    @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[]   @relation("CategoryTree")
+  kind      CategoryKind
+  nature    SpendNature?
+  nameHe    String
+  nameAr    String
+  sortOrder Int          @default(0)
+  isSystem  Boolean      @default(true)
+
+  transactions Transaction[]
+  rules        CategorizationRule[]
+  budgets      Budget[]
+
+  @@map("categories")
+}
+
+enum CategorySource {
+  NONE
+  RULE
+  LEARNED
+  MANUAL
+}
+
+model Transaction {
+  id                 String           @id @default(cuid())
+  householdId        String
+  household          Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  accountId          String
+  account            FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  importBatchId      String?
+  importBatch        ImportBatch?     @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  date               DateTime         @db.Date
+  // For credit cards: the billing (debit) date.
+  chargeDate         DateTime?        @db.Date
+  // Signed agorot in account currency. Negative = money out, positive = money in.
+  amount             BigInt
+  // Original foreign-currency amount when relevant.
+  originalAmount     BigInt?
+  originalCurrency   String?          @db.Char(3)
+  description        String
+  merchantNormalized String?
+  categoryId         String?
+  category           Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categorySource     CategorySource   @default(NONE)
+  installmentNumber  Int?
+  installmentTotal   Int?
+  isTransfer         Boolean          @default(false)
+  // Deterministic fingerprint used for duplicate detection on re-import.
+  dedupKey           String
+  note               String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@unique([accountId, dedupKey])
+  @@index([householdId, date])
+  @@index([importBatchId])
+  @@map("transactions")
+}
+
+enum RuleMatch {
+  CONTAINS
+  STARTS_WITH
+  EQUALS
+  REGEX
+}
+
+enum RuleOrigin {
+  SYSTEM
+  ADVISOR
+  LEARNED
+}
+
+model CategorizationRule {
+  id          String     @id @default(cuid())
+  // null = global (merchant dictionary); otherwise household-specific override.
+  householdId String?
+  household   Household? @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  match       RuleMatch
+  pattern     String
+  categoryId  String
+  category    Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  priority    Int        @default(100)
+  origin      RuleOrigin
+  hitCount    Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([householdId])
+  @@map("categorization_rules")
+}
+
+model Budget {
+  id            String    @id @default(cuid())
+  householdId   String
+  household     Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  categoryId    String
+  category      Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  monthlyAmount BigInt // agorot
+  effectiveFrom String // "YYYY-MM"
+  createdAt     DateTime  @default(now())
+
+  @@unique([householdId, categoryId, effectiveFrom])
+  @@map("budgets")
+}
+
+// Immutable: UPDATE/DELETE are blocked by a DB trigger (see migration).
+// Re-closing a month creates a new version that supersedes the previous one.
+model MonthlySnapshot {
+  id             String    @id @default(cuid())
+  householdId    String
+  // Cascade only succeeds inside purgeHousehold(), which sets app.allow_snapshot_purge (see migration trigger).
+  household      Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  period         String // "YYYY-MM"
+  version        Int       @default(1)
+  totalIncome    BigInt
+  totalExpenses  BigInt
+  surplus        BigInt
+  savingsRatePpm Int
+  // Full breakdown + inputs + rule/calc versions used (traceability).
+  payload        Json
+  calcVersion    String
+  contentSha256  String
+  closedByUserId String
+  closedAt       DateTime  @default(now())
+
+  @@unique([householdId, period, version])
+  @@map("monthly_snapshots")
+}
+
+model AdvisorNote {
+  id              String    @id @default(cuid())
+  householdId     String
+  household       Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  period          String?
+  body            String
+  createdByUserId String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([householdId])
+  @@map("advisor_notes")
+}
+
+enum ActionStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+model ActionItem {
+  id              String       @id @default(cuid())
+  householdId     String
+  household       Household    @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  period          String?
+  title           String
+  details         String?
+  status          ActionStatus @default(OPEN)
+  visibleToClient Boolean      @default(true)
+  dueDate         DateTime?    @db.Date
+  createdByUserId String
+  completedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([householdId])
+  @@map("action_items")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Versioned configuration (no hardcoded rates anywhere)
+// ─────────────────────────────────────────────────────────────
+
+enum VerificationStatus {
+  VERIFIED // checked against the cited official source on lastVerifiedAt
+  UNVERIFIED // seeded/entered but not yet checked — UI shows a warning
+  MISSING // value intentionally empty; calculators refuse to run
+}
+
+// Rows are never edited in place once VERIFIED: a change = a new row with a new effectiveFrom.
+model TaxRule {
+  id                   String             @id @default(cuid())
+  ruleKey              String // e.g. "purchase_tax.single_residence"
+  jurisdiction         String             @default("IL")
+  // Schema per ruleKey is validated in code (src/server/config/tax-rule-schemas.ts).
+  parameters           Json?
+  effectiveFrom        DateTime           @db.Date
+  effectiveTo          DateTime?          @db.Date
+  sourceUrl            String?
+  sourceTitle          String?
+  status               VerificationStatus @default(UNVERIFIED)
+  lastVerifiedByUserId String?
+  lastVerifiedAt       DateTime?
+  notes                String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@unique([ruleKey, jurisdiction, effectiveFrom])
+  @@index([ruleKey, effectiveFrom])
+  @@map("tax_rules")
+}
+
+enum FeeBase {
+  DEPOSITS // דמי ניהול מהפקדה
+  ACCUMULATION // דמי ניהול מצבירה
+}
+
+model FeeBenchmark {
+  id                   String             @id @default(cuid())
+  productType          String // "PENSION_COMPREHENSIVE" | "PROVIDENT_FUND" | "STUDY_FUND" | ...
+  feeBase              FeeBase
+  // Market benchmark the advisor considers "good" (ppm). Null = not set.
+  benchmarkPpm         Int?
+  // Legal ceiling per regulation (ppm). Null = unverified/unknown.
+  legalCeilingPpm      Int?
+  effectiveFrom        DateTime           @db.Date
+  effectiveTo          DateTime?          @db.Date
+  sourceUrl            String?
+  sourceTitle          String?
+  status               VerificationStatus @default(UNVERIFIED)
+  lastVerifiedByUserId String?
+  lastVerifiedAt       DateTime?
+  notes                String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@unique([productType, feeBase, effectiveFrom])
+  @@map("fee_benchmarks")
+}
+
+// Advisory thresholds that are policy, not law (emergency-fund months,
+// health-score weights, "expensive debt" threshold, etc.).
+model AdvisoryParameter {
+  id              String    @id @default(cuid())
+  key             String
+  value           Json
+  effectiveFrom   DateTime  @db.Date
+  effectiveTo     DateTime? @db.Date
+  description     String?
+  updatedByUserId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([key, effectiveFrom])
+  @@map("advisory_parameters")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Audit (append-only: UPDATE/DELETE blocked by DB trigger)
+// ─────────────────────────────────────────────────────────────
+
+enum AuditAction {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  LOGIN_LOCKED
+  LOGOUT
+  TWO_FACTOR_ENROLLED
+  TWO_FACTOR_FAILED
+  VIEW
+  CREATE
+  UPDATE
+  DELETE
+  EXPORT
+  IMPORT_COMMIT
+  IMPORT_UNDO
+  MONTH_CLOSE
+  CONFIG_CHANGE
+}
+
+model AuditLog {
+  id          BigInt      @id @default(autoincrement())
+  at          DateTime    @default(now())
+  // Plain columns, no FK: audit entries must outlive deleted users/households.
+  actorUserId String?
+  actorRole   Role?
+  action      AuditAction
+  entityType  String?
+  entityId    String?
+  householdId String?
+  ip          String?
+  userAgent   String?
+  metadata    Json?
+
+  @@index([householdId, at])
+  @@index([actorUserId, at])
+  @@map("audit_log")
+}

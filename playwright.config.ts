@@ -1,0 +1,24 @@
+import { defineConfig, devices } from "@playwright/test";
+
+const PORT = 3100;
+const TEST_DB = process.env.E2E_DATABASE_URL ?? "postgresql://ta:ta_dev_pw@localhost:5432/ta_platform_test?schema=public";
+
+export default defineConfig({
+  testDir: "tests/e2e",
+  fullyParallel: false,
+  workers: 1,
+  retries: 0,
+  globalSetup: "./tests/e2e/global-setup.ts",
+  use: { baseURL: `http://localhost:${PORT}`, trace: "off", locale: "he-IL", timezoneId: "Asia/Jerusalem" },
+  projects: [
+    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    { name: "mobile", use: { ...devices["Pixel 7"] } },
+  ],
+  webServer: {
+    command: `npx next start -p ${PORT}`,
+    url: `http://localhost:${PORT}/api/health`,
+    reuseExistingServer: false,
+    env: { DATABASE_URL: TEST_DB },
+    timeout: 60_000,
+  },
+});

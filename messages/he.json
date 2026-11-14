@@ -1,0 +1,150 @@
+{
+  "app": {
+    "name": "T.A Mortgages",
+    "tagline": "ניהול פיננסי והשקעות",
+    "disclaimer": "הניתוח מיועד לבדיקת היועץ בלבד ואינו מהווה ייעוץ מס או ייעוץ השקעות סופי. יש לאמת שיעורים ותקרות עדכניים מול המקורות הרשמיים."
+  },
+  "nav": {
+    "dashboard": "לוח בקרה",
+    "clients": "לקוחות",
+    "config": "טבלאות תצורה",
+    "account": "החשבון שלי",
+    "logout": "התנתקות",
+    "portal": "המצב שלי",
+    "skipToContent": "דילוג לתוכן"
+  },
+  "auth": {
+    "loginTitle": "כניסה למערכת",
+    "email": "דוא\"ל",
+    "password": "סיסמה",
+    "submit": "כניסה",
+    "invalid": "דוא\"ל או סיסמה שגויים",
+    "locked": "החשבון ננעל זמנית לאחר ניסיונות כושלים. נסו שוב בעוד מספר דקות.",
+    "rateLimited": "יותר מדי ניסיונות. נסו שוב בעוד מספר דקות.",
+    "twoFactorTitle": "אימות דו-שלבי",
+    "twoFactorHelp": "הזינו את הקוד בן 6 הספרות מאפליקציית האימות, או קוד שחזור.",
+    "code": "קוד",
+    "verify": "אימות",
+    "invalidCode": "קוד שגוי. נסו שוב.",
+    "setupTitle": "הגדרת אימות דו-שלבי (חובה ליועץ)",
+    "setupStep1": "סרקו את קוד ה-QR באפליקציית אימות (Google Authenticator, Microsoft Authenticator וכדומה).",
+    "setupManual": "או הזינו ידנית את המפתח:",
+    "setupStep2": "הזינו את הקוד שמופיע באפליקציה כדי לאשר.",
+    "recoveryTitle": "קודי שחזור",
+    "recoveryHelp": "שמרו את הקודים במקום בטוח. כל קוד ניתן לשימוש פעם אחת בלבד, והם לא יוצגו שוב.",
+    "continue": "המשך",
+    "backToLogin": "חזרה לכניסה"
+  },
+  "advisor": {
+    "dashboardTitle": "לוח בקרה — כל הלקוחות",
+    "household": "משק בית",
+    "status": "מצב החודש",
+    "lastClosed": "חודש סגור אחרון",
+    "trend": "מגמה",
+    "members": "בני בית",
+    "missingUpdate": "חסר עדכון חודשי",
+    "noClients": "אין עדיין לקוחות.",
+    "summaryTotal": "סה\"כ לקוחות",
+    "summaryClosed": "חודש מאוזן",
+    "summaryDeficit": "בגירעון",
+    "summaryNoData": "ללא נתונים",
+    "openClient": "פתיחת תיק"
+  },
+  "status": {
+    "SURPLUS": "חודש מאוזן",
+    "DEFICIT": "גירעון",
+    "NO_DATA": "אין נתונים"
+  },
+  "household": {
+    "profile": "פרופיל משק הבית",
+    "riskTolerance": "רמת סיכון (נקבעת ע\"י היועץ)",
+    "notAssessed": "טרם נקבעה",
+    "employment": "תעסוקה",
+    "incomeSources": "מקורות הכנסה",
+    "goals": "יעדים",
+    "consents": "הסכמות",
+    "consentGiven": "ניתנה הסכמה לעיבוד מידע",
+    "consentMissing": "חסרה הסכמה לעיבוד מידע",
+    "phaseNote": "ייבוא דפי חשבון, סיווג וסגירת חודש יתווספו בשלב 1.",
+    "period": "חודש",
+    "surplus": "עודף / גירעון",
+    "savingsRate": "שיעור חיסכון"
+  },
+  "enums": {
+    "RiskTolerance": {
+      "VERY_LOW": "נמוכה מאוד",
+      "LOW": "נמוכה",
+      "MEDIUM": "בינונית",
+      "HIGH": "גבוהה"
+    },
+    "EmploymentType": {
+      "SALARIED": "שכיר/ה",
+      "SELF_EMPLOYED": "עצמאי/ת",
+      "BOTH": "שכיר/ה ועצמאי/ת",
+      "NOT_EMPLOYED": "לא עובד/ת",
+      "RETIRED": "פנסיונר/ית"
+    },
+    "MemberRole": {
+      "PRIMARY": "ראשי/ת",
+      "SPOUSE": "בן/בת זוג",
+      "DEPENDENT": "תלוי/ה",
+      "OTHER": "אחר"
+    },
+    "IncomeType": {
+      "SALARY": "משכורת",
+      "SELF_EMPLOYMENT": "עסק עצמאי",
+      "BONUS": "בונוס",
+      "RENTAL": "שכירות",
+      "PENSION": "פנסיה",
+      "ALLOWANCE": "קצבה",
+      "OTHER": "אחר"
+    },
+    "VerificationStatus": {
+      "VERIFIED": "מאומת",
+      "UNVERIFIED": "לא מאומת",
+      "MISSING": "חסר"
+    }
+  },
+  "config": {
+    "title": "טבלאות תצורה (מס, דמי ניהול, ספים)",
+    "intro": "כל שיעור מס, תקרה וסף נשמר כאן עם תאריך תחולה ומקור. אין ערכים קבועים בקוד. ערך שלא אומת מסומן ולא ישמש לחישוב סופי.",
+    "taxRules": "כללי מס",
+    "feeBenchmarks": "רף דמי ניהול",
+    "advisoryParameters": "פרמטרים מקצועיים",
+    "ruleKey": "מפתח",
+    "effectiveFrom": "בתוקף מ-",
+    "effectiveTo": "עד",
+    "source": "מקור",
+    "verification": "אימות",
+    "lastVerified": "אומת לאחרונה",
+    "value": "ערך",
+    "unverifiedWarning": "{count} ערכים טרם אומתו מול מקור רשמי"
+  },
+  "portal": {
+    "hello": "שלום {name}",
+    "statusHeadline": "המצב החודשי שלכם",
+    "noDataYet": "היועץ שלכם עדיין מכין את התמונה החודשית. ברגע שהחודש ייסגר, תראו כאן לאן הלך הכסף.",
+    "yourTasks": "המשימות שלכם",
+    "noTasks": "אין משימות פתוחות.",
+    "uploadSoon": "העלאת דפי חשבון תתאפשר בשלב 1.",
+    "savingsRate": "שיעור חיסכון"
+  },
+  "account": {
+    "title": "החשבון שלי",
+    "language": "שפה",
+    "save": "שמירה",
+    "twoFactor": "אימות דו-שלבי",
+    "enabled": "מופעל",
+    "disabled": "כבוי"
+  },
+  "common": {
+    "yes": "כן",
+    "no": "לא",
+    "none": "—",
+    "back": "חזרה"
+  },
+  "lang": {
+    "he": "עברית",
+    "ar": "العربية"
+  }
+}

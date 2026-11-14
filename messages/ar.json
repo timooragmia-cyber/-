@@ -1,0 +1,150 @@
+{
+  "app": {
+    "name": "T.A Mortgages",
+    "tagline": "الإدارة المالية والاستثمار",
+    "disclaimer": "هذا التحليل مُعَدّ لمراجعة المستشار فقط، ولا يُعتبر استشارة ضريبية أو استثمارية نهائية. يجب التحقق من النسب والسقوف المحدّثة لدى المصادر الرسمية."
+  },
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "clients": "الزبائن",
+    "config": "جداول الإعدادات",
+    "account": "حسابي",
+    "logout": "تسجيل الخروج",
+    "portal": "وضعي المالي",
+    "skipToContent": "تخطَّ إلى المحتوى"
+  },
+  "auth": {
+    "loginTitle": "تسجيل الدخول",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "submit": "دخول",
+    "invalid": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+    "locked": "تم قفل الحساب مؤقتًا بعد محاولات فاشلة. حاولوا مجددًا بعد بضع دقائق.",
+    "rateLimited": "محاولات كثيرة جدًا. حاولوا مجددًا بعد بضع دقائق.",
+    "twoFactorTitle": "التحقق بخطوتين",
+    "twoFactorHelp": "أدخلوا الرمز المكوّن من 6 أرقام من تطبيق المصادقة، أو رمز استرداد.",
+    "code": "الرمز",
+    "verify": "تحقق",
+    "invalidCode": "الرمز غير صحيح. حاولوا مجددًا.",
+    "setupTitle": "إعداد التحقق بخطوتين (إلزامي للمستشار)",
+    "setupStep1": "امسحوا رمز QR بتطبيق مصادقة (Google Authenticator أو Microsoft Authenticator وغيرهما).",
+    "setupManual": "أو أدخلوا المفتاح يدويًا:",
+    "setupStep2": "أدخلوا الرمز الظاهر في التطبيق للتأكيد.",
+    "recoveryTitle": "رموز الاسترداد",
+    "recoveryHelp": "احفظوا الرموز في مكان آمن. كل رمز يُستخدم مرة واحدة فقط، ولن تُعرض مرة أخرى.",
+    "continue": "متابعة",
+    "backToLogin": "العودة لتسجيل الدخول"
+  },
+  "advisor": {
+    "dashboardTitle": "لوحة التحكم — جميع الزبائن",
+    "household": "الأسرة",
+    "status": "وضع الشهر",
+    "lastClosed": "آخر شهر مُغلق",
+    "trend": "الاتجاه",
+    "members": "أفراد الأسرة",
+    "missingUpdate": "ينقص تحديث شهري",
+    "noClients": "لا يوجد زبائن بعد.",
+    "summaryTotal": "إجمالي الزبائن",
+    "summaryClosed": "شهر متوازن",
+    "summaryDeficit": "في عجز",
+    "summaryNoData": "بلا معطيات",
+    "openClient": "فتح الملف"
+  },
+  "status": {
+    "SURPLUS": "شهر متوازن",
+    "DEFICIT": "عجز",
+    "NO_DATA": "لا توجد معطيات"
+  },
+  "household": {
+    "profile": "ملف الأسرة",
+    "riskTolerance": "مستوى المخاطرة (يحدده المستشار)",
+    "notAssessed": "لم يُحدَّد بعد",
+    "employment": "العمل",
+    "incomeSources": "مصادر الدخل",
+    "goals": "الأهداف",
+    "consents": "الموافقات",
+    "consentGiven": "تم منح الموافقة على معالجة المعطيات",
+    "consentMissing": "تنقص الموافقة على معالجة المعطيات",
+    "phaseNote": "سيُضاف استيراد كشوف الحساب والتصنيف وإغلاق الشهر في المرحلة 1.",
+    "period": "الشهر",
+    "surplus": "فائض / عجز",
+    "savingsRate": "نسبة الادخار"
+  },
+  "enums": {
+    "RiskTolerance": {
+      "VERY_LOW": "منخفض جدًا",
+      "LOW": "منخفض",
+      "MEDIUM": "متوسط",
+      "HIGH": "مرتفع"
+    },
+    "EmploymentType": {
+      "SALARIED": "أجير/ة",
+      "SELF_EMPLOYED": "مستقل/ة",
+      "BOTH": "أجير/ة ومستقل/ة",
+      "NOT_EMPLOYED": "لا يعمل/تعمل",
+      "RETIRED": "متقاعد/ة"
+    },
+    "MemberRole": {
+      "PRIMARY": "رئيسي/ة",
+      "SPOUSE": "زوج/زوجة",
+      "DEPENDENT": "مُعال/ة",
+      "OTHER": "آخر"
+    },
+    "IncomeType": {
+      "SALARY": "راتب",
+      "SELF_EMPLOYMENT": "عمل مستقل",
+      "BONUS": "مكافأة",
+      "RENTAL": "إيجار",
+      "PENSION": "تقاعد",
+      "ALLOWANCE": "مخصصات",
+      "OTHER": "آخر"
+    },
+    "VerificationStatus": {
+      "VERIFIED": "مُتحقَّق منه",
+      "UNVERIFIED": "غير مُتحقَّق منه",
+      "MISSING": "ناقص"
+    }
+  },
+  "config": {
+    "title": "جداول الإعدادات (ضريبة، رسوم إدارة، عتبات)",
+    "intro": "كل نسبة ضريبة وسقف وعتبة محفوظة هنا مع تاريخ سريان ومصدر. لا توجد قيم ثابتة في الكود. القيمة غير المُتحقَّق منها مُعلَّمة ولن تُستخدم لحساب نهائي.",
+    "taxRules": "قواعد الضريبة",
+    "feeBenchmarks": "مرجع رسوم الإدارة",
+    "advisoryParameters": "معايير مهنية",
+    "ruleKey": "المفتاح",
+    "effectiveFrom": "ساري من",
+    "effectiveTo": "حتى",
+    "source": "المصدر",
+    "verification": "التحقق",
+    "lastVerified": "آخر تحقق",
+    "value": "القيمة",
+    "unverifiedWarning": "{count} قيم لم يتم التحقق منها بعد مقابل مصدر رسمي"
+  },
+  "portal": {
+    "hello": "أهلًا {name}",
+    "statusHeadline": "وضعكم الشهري",
+    "noDataYet": "مستشاركم ما زال يُعِدّ الصورة الشهرية. عند إغلاق الشهر ستشاهدون هنا أين ذهب المال.",
+    "yourTasks": "مهامكم",
+    "noTasks": "لا توجد مهام مفتوحة.",
+    "uploadSoon": "رفع كشوف الحساب سيُتاح في المرحلة 1.",
+    "savingsRate": "نسبة الادخار"
+  },
+  "account": {
+    "title": "حسابي",
+    "language": "اللغة",
+    "save": "حفظ",
+    "twoFactor": "التحقق بخطوتين",
+    "enabled": "مُفعَّل",
+    "disabled": "غير مُفعَّل"
+  },
+  "common": {
+    "yes": "نعم",
+    "no": "لا",
+    "none": "—",
+    "back": "رجوع"
+  },
+  "lang": {
+    "he": "עברית",
+    "ar": "العربية"
+  }
+}

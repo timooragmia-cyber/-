@@ -1,0 +1,41 @@
+# Local/prod-like stack. Secrets come from .env (never committed).
+# Production notes (TLS reverse proxy, backups, encrypted volume): docs/ARCHITECTURE.md §Deployment.
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ta
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ta_platform
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ta -d ta_platform"]
+      interval: 5s
+      retries: 10
+    # Not exposed to the host network in production.
+
+  migrate:
+    build: { context: ., target: migrate }
+    environment:
+      DATABASE_URL: postgresql://ta:${POSTGRES_PASSWORD}@db:5432/ta_platform?schema=public
+    depends_on: { db: { condition: service_healthy } }
+    profiles: ["tools"]
+
+  app:
+    build: { context: ., target: runtime }
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://ta:${POSTGRES_PASSWORD}@db:5432/ta_platform?schema=public
+      NODE_ENV: production
+    ports:
+      - "127.0.0.1:3000:3000" # bind to localhost; the TLS reverse proxy is the only public entry
+    volumes:
+      - uploads:/app/storage
+    depends_on: { db: { condition: service_healthy } }
+
+volumes:
+  pgdata:
+  uploads:

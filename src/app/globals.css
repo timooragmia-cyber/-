@@ -1,0 +1,67 @@
+@import "tailwindcss";
+@import "@fontsource-variable/noto-sans-hebrew";
+@import "@fontsource-variable/noto-sans-arabic";
+
+/*
+ * Design tokens. Brand colors are placeholders until the T.A Mortgages logo/brand
+ * kit is supplied — change them here only.
+ * Status colors are chosen for contrast (WCAG AA on white) and are always paired
+ * with a text label/icon, never color alone.
+ */
+:root {
+  --background: #f7f8fa;
+  --surface: #ffffff;
+  --foreground: #14202e;
+  --muted: #5b6878;
+  --border: #dde2e8;
+  --brand: #0f3a5f;
+  --brand-foreground: #ffffff;
+  --accent: #b8892c;
+  --ok: #17703a;
+  --ok-bg: #e5f4ea;
+  --warn: #8a5a00;
+  --warn-bg: #fdf3dc;
+  --bad: #b42318;
+  --bad-bg: #fde8e7;
+  --focus: #2563eb;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-accent: var(--accent);
+  --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-bad: var(--bad);
+  --color-bad-bg: var(--bad-bg);
+  --font-sans: "Noto Sans Hebrew Variable", "Noto Sans Arabic Variable", system-ui, sans-serif;
+}
+
+html[lang="ar"] {
+  --font-sans: "Noto Sans Arabic Variable", "Noto Sans Hebrew Variable", system-ui, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Numbers (amounts, dates) must render LTR inside RTL text without breaking sign placement. */
+.num {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
