@@ -7,7 +7,7 @@ import { selectEffective } from "@/lib/config/effective";
 import { parseAmount, parsePercentToPpm } from "@/lib/money";
 import { audit } from "@/server/audit";
 import type { CurrentUser } from "@/server/auth/dal";
-import { assertHouseholdAccess } from "@/server/auth/dal-guards";
+import { assertHouseholdAccess } from "@/server/auth/dal";
 import { getAdvisoryParameter } from "@/server/config/advisory";
 import { db } from "@/server/db";
 import { PRODUCT_PARSERS, PRODUCT_TYPES } from "./report-parsers";
@@ -48,7 +48,7 @@ const FALLBACK_HORIZON_YEARS = 20;
 export type ProductView = Awaited<ReturnType<typeof savingsOverview>>["products"][number];
 
 export async function savingsOverview(user: CurrentUser, householdId: string) {
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   const [products, members, rows, { a, fromHousehold, defaults }] = await Promise.all([
     db.longTermProduct.findMany({ where: { householdId }, orderBy: [{ personId: "asc" }, { productType: "asc" }], include: { person: true } }),
     db.person.findMany({ where: { householdId }, orderBy: { memberRole: "asc" } }),

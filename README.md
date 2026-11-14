@@ -2,7 +2,7 @@
 
 Advisor workspace + client portal for household finances: monthly close, improvement tracking, fee reduction, and a prioritized savings & investment plan. Hebrew and Arabic, full RTL.
 
-> **Status: Phase 4 complete (mortgage & debt, action plan with advisor approval, PDF reports in Hebrew/Arabic)** — Phase 5 (security hardening, privacy rights, deployment guide) next — see `CHANGELOG.md`. All figures in the UI are labeled *analysis for advisor review*. Tax and fee tables are intentionally empty until they are verified (`docs/UNVERIFIED.md`).
+> **Status: 1.0.0 — all phases complete** (Phase 5: security hardening, privacy rights, deployment). Before going live, work through `docs/UNVERIFIED.md` and `docs/PRIVACY.md` with the advisor and legal counsel — see `CHANGELOG.md`. All figures in the UI are labeled *analysis for advisor review*. Tax and fee tables are intentionally empty until they are verified (`docs/UNVERIFIED.md`).
 
 ## Quick start (local)
 
@@ -29,16 +29,11 @@ Demo logins (fictional): `advisor@example.test`, and the clients `samer.demo@exa
 | `npm run test:e2e` | Playwright on desktop + mobile against `ta_platform_test` (reset and seeded automatically; refuses any DB without `_test` in its name) |
 | `npm run typecheck` / `lint` | TypeScript strict / ESLint |
 | `npm run db:migrate` / `db:deploy` / `db:seed` | Prisma |
+| `npm run privacy:purge` (`-- --dry-run`) | Purge restricted households whose retention period ended (daily cron in production) |
 
-## Docker
+## Production
 
-```bash
-docker compose build
-docker compose run --rm migrate   # apply migrations
-docker compose up -d app
-```
-
-The app binds to `127.0.0.1:3000`. Put a TLS reverse proxy in front (see `docs/ARCHITECTURE.md` §7).
+Docker Compose on one VM: Caddy (TLS) → app → PostgreSQL, nightly encrypted backups, daily privacy purge. Follow **`docs/DEPLOYMENT.md`** step by step.
 
 ## Non-negotiable conventions
 
@@ -57,9 +52,11 @@ Two fictional statement files live in `tests/fixtures/` (a bank CSV with title r
 
 - `docs/ARCHITECTURE.md` — design, security model, folder structure
 - `docs/ERD.md` — data model and planned entities per phase
+- `docs/DEPLOYMENT.md` — installation, backups and restore drill, updates, keys, monitoring
+- `docs/PRIVACY.md` — Amendment 13 readiness: technical measures, office obligations, request runbook
 - `docs/UNVERIFIED.md` — what is not verified yet and who owns it
 - `docs/calculations/fee-simulator.md` — simulator method and reference examples
 - `docs/calculations/tax-examples.md` — tax calculators: method and documented examples
 - `docs/calculations/investments.md` — investment modules: method and documented examples
 - `docs/calculations/debt-plan.md` — mortgage, debt, action plan and PDF reports
-- `docs/screenshots/` — screens per phase (`p1-*` … `p4-*`, including sample PDFs)
+- `docs/screenshots/` — screens per phase (`p1-*` … `p5-*`, including sample PDFs)

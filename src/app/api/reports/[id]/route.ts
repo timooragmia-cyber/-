@@ -1,4 +1,4 @@
-import { getCurrentUserOrNull } from "@/server/auth/dal";
+import { getCurrentUserOrNull, HouseholdRestrictedError } from "@/server/auth/dal";
 import { ForbiddenError } from "@/server/auth/dal-guards";
 import { readReport } from "@/server/reports/service";
 
@@ -14,7 +14,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const name = `ta-report-${r.report.type.toLowerCase()}-${r.report.period ?? r.report.createdAt.toISOString().slice(0, 10)}.pdf`;
     return new Response(Buffer.from(r.bytes), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${name}"`, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
   } catch (e) {
-    if (e instanceof ForbiddenError) return new Response("Not found", { status: 404 });
+    if (e instanceof ForbiddenError || e instanceof HouseholdRestrictedError) return new Response("Not found", { status: 404 });
     throw e;
   }
 }

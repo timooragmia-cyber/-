@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.0.0] — Phase 5: Security hardening, privacy rights, deployment (2026-11-14)
+
+### Added
+- **Privacy (Amendment 13 readiness)**:
+  - **Right of access**: data export as a ZIP (`data.json`, `transactions.csv` with formula-injection protection, the original uploaded files and the reports). The client gets their own data from *My data*; the advisor gets a full export including internal notes and audit entries.
+  - **Data-subject requests** (access, correction, deletion): due dates, dashboard tracking with overdue items flagged, and a recorded resolution.
+  - **Restrict → purge**: restriction is immediate (no access or processing, client logins disabled and signed out, "lift restriction" possible). After the configured retention period the household is purged, including the immutable snapshots and all stored files. The audit log keeps ids and counts only. Purge runs from a daily job (`npm run privacy:purge`, `--dry-run`) or from the advisor's button once due.
+- **Security**:
+  - Strict Content-Security-Policy with a per-request nonce; no third-party origins.
+  - The household guard also enforces the privacy restriction, and every client-file page checks it itself.
+  - Static tests fail the build if a page, route or server action skips authorization, or if a guard is not awaited.
+  - Free text is no longer copied into the audit log.
+  - Production refuses a non-HTTPS `APP_URL`.
+  - Export and request rate limits.
+- **Client 2FA prompt** on the portal and the account page.
+- **Deployment**:
+  - Caddy (automatic TLS, HSTS, request size limit) as the only public entry.
+  - `tools` and `backup` services.
+  - Nightly backups encrypted with `age` to an off-server key, uploaded to S3-compatible storage.
+  - Restore script and a monthly restore drill.
+  - `docs/DEPLOYMENT.md` and `docs/PRIVACY.md`.
+- Tests: 247 unit tests and 32 E2E (desktop and mobile), including headers/CSP, export contents, restriction lockout, lift, and purge with file deletion.
+
+### Fixed during build
+- A server action returned a translation key that did not exist; a new test checks every returned message key.
+- `docker compose` could not derive a project name from the repository folder; the name is now set explicitly.
+
 ## [0.6.0] — Phase 4: Mortgage & debt, action plan, PDF reports (2026-11-14)
 
 ### Added

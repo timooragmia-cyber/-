@@ -5,7 +5,7 @@ import { consolidate, optimizeMix, rankDebts, refinance, type Debt } from "@/lib
 import { parseAmount, parsePercentToPpm } from "@/lib/money";
 import { audit } from "@/server/audit";
 import type { CurrentUser } from "@/server/auth/dal";
-import { assertHouseholdAccess } from "@/server/auth/dal-guards";
+import { assertHouseholdAccess } from "@/server/auth/dal";
 import { getAdvisoryParameter } from "@/server/config/advisory";
 import { db } from "@/server/db";
 
@@ -17,7 +17,7 @@ const toTrack = (t: { type: Track["type"]; method: Track["method"]; balance: big
 });
 
 export async function debtOverview(user: CurrentUser, householdId: string) {
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   const [mortgages, loans, banks, scenarios, boi, threshold] = await Promise.all([
     db.mortgage.findMany({ where: { householdId }, include: { tracks: true }, orderBy: { createdAt: "asc" } }),
     db.loan.findMany({ where: { householdId }, orderBy: { annualRatePpm: "desc" } }),
@@ -63,26 +63,26 @@ export const loanSchema = z.object({
   balance: money(), annualRate: pct, monthlyPayment: money(false), remainingMonths: z.string().optional().transform((v) => (v ? Number(v) : null)).pipe(z.number().int().min(1).max(480).nullable()),
 });
 
-const guard = (u: CurrentUser, h: string) => { if (u.role !== "ADVISOR") throw new Error("Advisor only"); assertHouseholdAccess(u, h); };
+const guard = async (u: CurrentUser, h: string) => { if (u.role !== "ADVISOR") throw new Error("Advisor only"); await assertHouseholdAccess(u, h); };
 
 export async function saveMortgage(u: CurrentUser, h: string, input: z.infer<typeof mortgageSchema>) {
-  guard(u, h);
+  await guard(u, h);
   const m = await db.mortgage.create({ data: { householdId: h, lender: input.lender, asOf: new Date(`${input.asOf}T00:00:00Z`), notes: input.notes || null } });
   await audit({ action: "CREATE", actorUserId: u.id, actorRole: u.role, entityType: "Mortgage", entityId: m.id, householdId: h });
 }
 export async function addTrack(u: CurrentUser, h: string, mortgageId: string, t: z.infer<typeof trackSchema>) {
-  guard(u, h);
+  await guard(u, h);
   const m = await db.mortgage.findFirstOrThrow({ where: { id: mortgageId, householdId: h } });
   await db.mortgageTrack.create({ data: { mortgageId: m.id, type: t.type, method: t.method, balance: t.balance, remainingMonths: t.remainingMonths, annualRatePpm: t.annualRate, monthsToReset: t.type.startsWith("VARIABLE_5") ? (t.monthsToReset ?? 60) : null } });
   await audit({ action: "CREATE", actorUserId: u.id, actorRole: u.role, entityType: "MortgageTrack", entityId: m.id, householdId: h });
 }
 export async function saveLoan(u: CurrentUser, h: string, l: z.infer<typeof loanSchema>) {
-  guard(u, h);
+  await guard(u, h);
   const r = await db.loan.create({ data: { householdId: h, kind: l.kind, lender: l.lender, label: l.label, balance: l.balance, annualRatePpm: l.annualRate, monthlyPayment: l.monthlyPayment, remainingMonths: l.remainingMonths } });
   await audit({ action: "CREATE", actorUserId: u.id, actorRole: u.role, entityType: "Loan", entityId: r.id, householdId: h });
 }
 export async function deleteDebtEntity(u: CurrentUser, h: string, kind: "mortgage" | "track" | "loan", id: string) {
-  guard(u, h);
+  await guard(u, h);
   if (kind === "mortgage") await db.mortgage.deleteMany({ where: { id, householdId: h } });
   if (kind === "track") await db.mortgageTrack.deleteMany({ where: { id, mortgage: { householdId: h } } });
   if (kind === "loan") await db.loan.deleteMany({ where: { id, householdId: h } });
@@ -91,7 +91,7 @@ export async function deleteDebtEntity(u: CurrentUser, h: string, kind: "mortgag
 
 /** Refinance the whole mortgage into the advisor's proposed rates (same balances and terms unless changed). */
 export async function refinanceSim(u: CurrentUser, h: string, mortgageId: string, proposedRates: Record<string, number>, newMonths: number | null, costs: { earlyRepaymentFee: bigint; openingCosts: bigint }) {
-  assertHouseholdAccess(u, h);
+  await assertHouseholdAccess(u, h);
   const m = await db.mortgage.findFirstOrThrow({ where: { id: mortgageId, householdId: h }, include: { tracks: true } });
   const sc = await getAdvisoryParameter<Scenarios>("mortgage.scenarios");
   const current = m.tracks.map(toTrack);

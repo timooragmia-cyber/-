@@ -3,11 +3,12 @@ import { BalanceProjectionChart } from "@/components/charts/balance-projection";
 import { Card, CardTitle } from "@/components/ui/card";
 import { formatMoney, toDisplayNumber, type MoneyLocale } from "@/lib/money";
 import { cashflow } from "@/server/accounts";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 
 export default async function CashflowPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const t = await getTranslations();
   const locale = (await getLocale()) as MoneyLocale;
   const cf = await cashflow(user, id);

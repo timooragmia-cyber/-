@@ -1,0 +1,29 @@
+# Public entry point: automatic TLS (Let's Encrypt), HSTS, then the app on the internal network.
+# DOMAIN and ACME_EMAIL come from .env (see docs/DEPLOYMENT.md).
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Statement uploads are capped at 10 MB in the app; refuse anything bigger at the edge.
+	request_body {
+		max_size 12MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	# Caddy sets X-Forwarded-For from the real client address (it does not trust incoming
+	# values by default). The app uses it for rate limiting, so the app must never be
+	# reachable except through this proxy.
+	reverse_proxy app:3000
+
+	log {
+		output stdout
+		format json
+	}
+}

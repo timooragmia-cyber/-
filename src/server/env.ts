@@ -17,7 +17,12 @@ const schema = z.object({
   APP_URL: z.string().url().default("http://localhost:3000"),
   TOTP_ISSUER: z.string().default("T.A Mortgages"),
   UPLOAD_DIR: z.string().default("./storage/uploads"),
-});
+}).refine(
+  // Production must be served over HTTPS (cookies are Secure). Localhost is allowed so the
+  // production build can be tested locally.
+  (e) => e.NODE_ENV !== "production" || e.APP_URL.startsWith("https://") || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(e.APP_URL),
+  { message: "must be https:// in production", path: ["APP_URL"] },
+);
 
 export type Env = z.infer<typeof schema>;
 

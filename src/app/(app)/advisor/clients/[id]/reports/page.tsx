@@ -4,7 +4,7 @@ import { HouseholdField } from "@/components/app/hidden";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { getClosedMonths } from "@/server/months";
 import { generateReportAction, releaseReportAction } from "../actions";
@@ -12,6 +12,7 @@ import { generateReportAction, releaseReportAction } from "../actions";
 export default async function ReportsPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const t = await getTranslations();
   const [reports, closed, household] = await Promise.all([
     db.report.findMany({ where: { householdId: id }, orderBy: { createdAt: "desc" }, take: 30 }),

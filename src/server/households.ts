@@ -23,6 +23,7 @@ export type DashboardRow = {
   hasConsent: boolean;
   status: HouseholdStatusResult;
   latestSurplus: bigint | null;
+  restrictedAt: Date | null;
 };
 
 export async function listHouseholdsForAdvisor(user: CurrentUser): Promise<DashboardRow[]> {
@@ -38,6 +39,7 @@ export async function listHouseholdsForAdvisor(user: CurrentUser): Promise<Dashb
       id: true,
       displayName: true,
       city: true,
+      restrictedAt: true,
       _count: { select: { members: true } },
       consents: { where: { type: "DATA_PROCESSING", revokedAt: null }, select: { id: true }, take: 1 },
       snapshots: {
@@ -59,12 +61,13 @@ export async function listHouseholdsForAdvisor(user: CurrentUser): Promise<Dashb
       hasConsent: h.consents.length > 0,
       status: computeHouseholdStatus(snaps, now, graceDays, flat),
       latestSurplus: snaps[0]?.surplus ?? null,
+      restrictedAt: h.restrictedAt,
     };
   });
 }
 
 export async function getHouseholdProfile(user: CurrentUser, householdId: string) {
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   const household = await db.household.findUnique({
     where: { id: householdId },
     include: {

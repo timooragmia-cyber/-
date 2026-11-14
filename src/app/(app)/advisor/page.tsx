@@ -8,14 +8,18 @@ import { formatMoney, type MoneyLocale } from "@/lib/money";
 import { requireAdvisor } from "@/server/auth/dal";
 import { listHouseholdsForAdvisor } from "@/server/households";
 import { db } from "@/server/db";
+import { openPrivacyRequests } from "@/server/privacy/service";
 
 export default async function AdvisorDashboard() {
   const user = await requireAdvisor();
-  const [rows, pending] = await Promise.all([
+  const [rows, pending, requests] = await Promise.all([
     listHouseholdsForAdvisor(user),
     db.uploadedFile.groupBy({ by: ["householdId"], where: { status: "PENDING_REVIEW" }, _count: true }),
+    openPrivacyRequests(user),
   ]);
+  const now = new Date();
   const pendingBy = new Map(pending.map((p) => [p.householdId, p._count]));
+  const tAll = await getTranslations();
   const tNav = await getTranslations("nav");
   const tDash = await getTranslations("dash");
   const t = await getTranslations("advisor");
@@ -43,6 +47,20 @@ export default async function AdvisorDashboard() {
           </Card>
         ))}
       </div>
+      {requests.length > 0 && (
+        <Card>
+          <h2 className="mb-2 font-semibold">{tAll("privacy.openRequests")}</h2>
+          <ul className="space-y-1 text-sm">
+            {requests.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-center gap-2">
+                <Link href={`/advisor/privacy/${r.householdId}`} className="font-medium text-brand underline">{r.household.displayName}</Link>
+                <span>{tAll(`privacy.type.${r.type}`)}</span>
+                <Badge tone={r.dueAt && r.dueAt < now ? "bad" : "warn"}>{tAll("privacy.due")} <span className="num">{r.dueAt ? r.dueAt.toISOString().slice(0, 10) : "—"}</span></Badge>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
       <Card className="p-0 sm:p-0">
         {rows.length === 0 ? (
           <p className="p-6 text-muted">{t("noClients")}</p>
@@ -68,7 +86,7 @@ export default async function AdvisorDashboard() {
                   </Td>
                   <Td>
                     <div className="flex flex-wrap items-center gap-1">
-                      <StatusBadge status={r.status.status} />
+                      {r.restrictedAt ? <Badge tone="bad">{tAll("privacy.restrictedBadge")}</Badge> : <StatusBadge status={r.status.status} />}
                       {r.status.missingUpdate && r.status.status !== "NO_DATA" && <Badge tone="warn">{t("missingUpdate")}</Badge>}
                       {pendingBy.get(r.id) ? <Badge tone="warn">{tDash("pendingUploads")}: {pendingBy.get(r.id)}</Badge> : null}
                     </div>
@@ -85,7 +103,7 @@ export default async function AdvisorDashboard() {
                     <TrendArrow trend={r.status.trend} />
                   </Td>
                   <Td>
-                    <Link href={`/advisor/clients/${r.id}`} className="font-medium text-brand underline">
+                    <Link href={r.restrictedAt ? `/advisor/privacy/${r.id}` : `/advisor/clients/${r.id}`} className="font-medium text-brand underline">
                       {t("openClient")}
                     </Link>
                   </Td>

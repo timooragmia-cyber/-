@@ -6,7 +6,7 @@ import { addMonths, periodOf } from "@/lib/domain/period";
 import { RuleUnavailableError } from "@/lib/tax/rules";
 import { audit } from "@/server/audit";
 import type { CurrentUser } from "@/server/auth/dal";
-import { assertHouseholdAccess } from "@/server/auth/dal-guards";
+import { assertHouseholdAccess } from "@/server/auth/dal";
 import { getAdvisoryParameter } from "@/server/config/advisory";
 import { db } from "@/server/db";
 import { debtOverview } from "@/server/debt/service";
@@ -74,7 +74,7 @@ async function buildInput(user: CurrentUser, householdId: string): Promise<{ inp
  */
 export async function regeneratePlan(user: CurrentUser, householdId: string) {
   if (user.role !== "ADVISOR") throw new Error("Advisor only");
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   const { input, thresholdSet } = await buildInput(user, householdId);
   const recs = generatePlan(input);
   const existing = await db.recommendation.findMany({ where: { householdId } });
@@ -92,13 +92,13 @@ export async function regeneratePlan(user: CurrentUser, householdId: string) {
 }
 
 export async function listPlan(user: CurrentUser, householdId: string) {
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   const where = user.role === "CLIENT" ? { householdId, status: { in: ["APPROVED", "IN_PROGRESS", "DONE"] as ("APPROVED" | "IN_PROGRESS" | "DONE")[] } } : { householdId };
   return db.recommendation.findMany({ where, orderBy: [{ priority: "asc" }, { createdAt: "asc" }] });
 }
 
 export async function updateRecommendation(user: CurrentUser, householdId: string, id: string, change: { status?: "PROPOSED" | "APPROVED" | "IN_PROGRESS" | "DONE" | "DISMISSED"; customTitle?: string | null; advisorNote?: string | null; move?: "up" | "down" }) {
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   const rec = await db.recommendation.findFirstOrThrow({ where: { id, householdId } });
   if (user.role === "CLIENT") {
     // Clients can only progress approved items they can see.
@@ -125,5 +125,6 @@ export async function updateRecommendation(user: CurrentUser, householdId: strin
     if (change.advisorNote !== undefined) data.advisorNote = change.advisorNote;
     if (Object.keys(data).length) await db.recommendation.update({ where: { id }, data });
   }
-  await audit({ action: "UPDATE", actorUserId: user.id, actorRole: user.role, entityType: "Recommendation", entityId: id, householdId, metadata: { ...change } as Prisma.InputJsonValue });
+  await audit({ action: "UPDATE", actorUserId: user.id, actorRole: user.role, entityType: "Recommendation", entityId: id, householdId, // Free text (titles, notes) never goes into the audit log: it outlives a privacy purge.
+    metadata: { status: change.status ?? null, move: change.move ?? null, changed: Object.keys(change).filter((k) => (change as Record<string, unknown>)[k] !== undefined) } });
 }

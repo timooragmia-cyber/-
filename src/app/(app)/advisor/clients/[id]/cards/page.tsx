@@ -2,13 +2,14 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Card, CardTitle } from "@/components/ui/card";
 import { formatMoney, formatPpmPercent, ratioPpm, type MoneyLocale } from "@/lib/money";
 import { accountsAnalysis } from "@/server/accounts";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { loadCategories } from "@/server/months";
 import { catName } from "@/server/view";
 
 export default async function CardsPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const t = await getTranslations();
   const locale = (await getLocale()) as MoneyLocale;
   const [accounts, cats] = await Promise.all([accountsAnalysis(user, id), loadCategories()]);

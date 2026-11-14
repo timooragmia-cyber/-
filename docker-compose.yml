@@ -1,5 +1,7 @@
-# Local/prod-like stack. Secrets come from .env (never committed).
-# Production notes (TLS reverse proxy, backups, encrypted volume): docs/ARCHITECTURE.md §Deployment.
+# Production stack on one VM. Secrets: .env (app) and backup.env (backup storage) — never committed.
+# Full guide: docs/DEPLOYMENT.md
+name: ta-platform
+
 services:
   db:
     image: postgres:16
@@ -14,14 +16,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ta -d ta_platform"]
       interval: 5s
       retries: 10
-    # Not exposed to the host network in production.
-
-  migrate:
-    build: { context: ., target: migrate }
-    environment:
-      DATABASE_URL: postgresql://ta:${POSTGRES_PASSWORD}@db:5432/ta_platform?schema=public
-    depends_on: { db: { condition: service_healthy } }
-    profiles: ["tools"]
+    # No ports: reachable only on the internal Docker network.
 
   app:
     build: { context: ., target: runtime }
@@ -30,12 +25,66 @@ services:
     environment:
       DATABASE_URL: postgresql://ta:${POSTGRES_PASSWORD}@db:5432/ta_platform?schema=public
       NODE_ENV: production
-    ports:
-      - "127.0.0.1:3000:3000" # bind to localhost; the TLS reverse proxy is the only public entry
+      UPLOAD_DIR: /app/storage/uploads
     volumes:
       - uploads:/app/storage
     depends_on: { db: { condition: service_healthy } }
+    # No ports: only Caddy reaches it. The app trusts X-Forwarded-For for rate limiting,
+    # which is safe only because nothing else can connect to it.
+
+  caddy:
+    image: caddy:2.10.0
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [app]
+
+  # One-off: docker compose run --rm migrate
+  migrate:
+    build: { context: ., target: migrate }
+    environment:
+      DATABASE_URL: postgresql://ta:${POSTGRES_PASSWORD}@db:5432/ta_platform?schema=public
+    depends_on: { db: { condition: service_healthy } }
+    profiles: ["tools"]
+
+  # One-off npm scripts with the app's configuration:
+  #   docker compose run --rm tools db:seed          (SEED_DEMO_DATA=false in production!)
+  #   docker compose run --rm tools privacy:purge    (daily, from cron)
+  tools:
+    build: { context: ., target: migrate }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://ta:${POSTGRES_PASSWORD}@db:5432/ta_platform?schema=public
+      UPLOAD_DIR: /app/storage/uploads
+    volumes:
+      - uploads:/app/storage
+    entrypoint: ["npm", "run"]
+    depends_on: { db: { condition: service_healthy } }
+    profiles: ["tools"]
+
+  # Nightly: docker compose run --rm backup /usr/local/bin/backup.sh
+  backup:
+    build: { context: ./deploy/backup }
+    env_file: backup.env
+    environment:
+      DATABASE_URL: postgresql://ta:${POSTGRES_PASSWORD}@db:5432/ta_platform
+      UPLOADS_DIR: /data/uploads
+    volumes:
+      - uploads:/data:ro
+    depends_on: { db: { condition: service_healthy } }
+    profiles: ["tools"]
 
 volumes:
   pgdata:
   uploads:
+  caddy_data:
+  caddy_config:

@@ -1,6 +1,6 @@
 # Architecture — T.A Mortgages Financial Platform
 
-Status: **Phase 4** (mortgage & debt, action plan, PDF reports). This document is the contract for every later phase.
+Status: **1.0.0** (all phases). This document is the contract for every later phase.
 
 ## 1. Product shape
 
@@ -70,7 +70,13 @@ Rule: anything that calculates money lives in `src/lib/**` as a pure function wi
 - **Field-level encryption**: AES-256-GCM with a key ring (`v1:…,v2:…`) for rotation; HMAC blind index for exact lookups (e.g. national ID). Account and card numbers: **last 4 digits only** (DB `CHECK` constraint). Bank credentials are never collected.
 - **Audit log**: append-only, enforced by a DB trigger. No foreign keys, so it survives user/household deletion. Views of household data are logged as well as changes.
 - **Immutable month close**: `monthly_snapshots` rejects `UPDATE`; re-closing a month writes a new version. `DELETE` is only possible inside the privacy-purge transaction (`SET LOCAL app.allow_snapshot_purge='on'`), used for data deletion requests.
-- **Headers**: frame-deny, nosniff, strict referrer, permissions policy. HSTS and TLS are handled by the reverse proxy.
+- **Headers**: strict CSP with a per-request nonce (`src/proxy.ts`, `src/lib/security/csp.ts`), frame-deny, nosniff, strict referrer, permissions policy. HSTS and TLS are handled by Caddy.
+- **Privacy restriction**: `assertHouseholdAccess` (async, in the DAL) refuses restricted households to everyone. Advisor client pages call `requireOpenHousehold` themselves, because layouts and pages render in parallel. Only the privacy module passes `allowRestricted`.
+- **Static guardrails** (`tests/unit/security-static.test.ts`) fail the build when:
+  - a page or route does not authenticate;
+  - a server action does not authenticate;
+  - a client-file page skips the restriction check;
+  - a guard is not awaited.
 
 ## 5. "No hardcoded rates" mechanism
 
@@ -124,6 +130,15 @@ The adapter interface (`ImportAdapter` in `src/lib/import/types.ts`) is `canHand
 - PDF: HTML built on the server, then rendered by Chromium (`src/server/reports/pdf.ts`) with JavaScript disabled and every network request blocked. Fonts are embedded as data URIs. The PDF is stored encrypted with its SHA-256.
 - The report language is explicit (`getTranslations({ locale })`) and independent of the viewer's UI language.
 
-## 7. Deployment (summary; the full guide comes in Phase 5)
+## 6e. Privacy (Phase 5)
 
-`docker compose` runs `db` and `app`. The app binds to `127.0.0.1` only; a TLS reverse proxy (Caddy/Nginx) in front sets HSTS. Postgres runs on an encrypted volume with nightly encrypted `pg_dump` off-site and a tested restore. Secrets come from `.env` on the host (or a secret manager), never from the image.
+- **Model:** `privacy_requests` holds each request, with a due date and a resolution. `households.restrictedAt` and `restrictedReason` mark a restricted file.
+- **Code:** pure date logic is in `src/lib/privacy/*`; the service (export ZIP, requests, restrict, lift, purge) is `src/server/privacy/service.ts`.
+- **Purge:** runs in one transaction with `SET LOCAL app.allow_snapshot_purge = 'on'`, then deletes the files. Details: `docs/PRIVACY.md`.
+
+## 7. Deployment
+
+- `docker compose` runs `db`, `app` and `caddy`, plus on-demand `migrate`, `tools` and `backup`. Only Caddy publishes ports.
+- Backups are `age`-encrypted to a key held off the server, uploaded to S3-compatible storage with a 35-day lifecycle, and verified by a monthly restore drill.
+- Secrets live in `.env` (app) and `backup.env` (backup storage). They are never in the image.
+- Full guide: `docs/DEPLOYMENT.md`.

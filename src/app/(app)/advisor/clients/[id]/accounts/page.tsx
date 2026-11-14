@@ -7,7 +7,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Field, Select } from "@/components/ui/select";
 import { Table, Td, Th } from "@/components/ui/table";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { hasActiveConsent } from "@/server/clients";
 import { db } from "@/server/db";
 import * as A from "../actions";
@@ -21,6 +21,7 @@ const INSTITUTIONS = ["LEUMI", "HAPOALIM", "DISCOUNT", "MIZRAHI_TEFAHOT", "ISRAC
 export default async function AccountsPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const t = await getTranslations();
   const [accounts, files, batches, members, consent] = await Promise.all([
     db.financialAccount.findMany({ where: { householdId: id }, orderBy: { createdAt: "asc" }, include: { _count: { select: { transactions: true } } } }),

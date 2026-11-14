@@ -1,13 +1,14 @@
 import { getLocale } from "next-intl/server";
 import { HealthCard, HighlightsCard, InstallmentsCard, RecurringCard, TrendCard } from "@/components/app/insights";
 import { audit } from "@/server/audit";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { householdInsights, loadCategories } from "@/server/months";
 import { catName, type Loc } from "@/server/view";
 
 export default async function ClientOverview({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const locale = (await getLocale()) as Loc;
   const [insights, cats] = await Promise.all([householdInsights(id), loadCategories()]);
   await audit({ action: "VIEW", actorUserId: user.id, actorRole: user.role, entityType: "HouseholdOverview", entityId: id, householdId: id });

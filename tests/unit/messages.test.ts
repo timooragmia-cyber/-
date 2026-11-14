@@ -37,4 +37,17 @@ describe("i18n catalogs", () => {
     }
     expect(bad).toEqual([]);
   });
+
+  it("every message/error key returned by server actions and services resolves (ActionForm shows it)", async () => {
+    const { readdirSync, readFileSync, statSync } = await import("node:fs");
+    const walk = (d: string): string[] => readdirSync(d).flatMap((f) => (statSync(`${d}/${f}`).isDirectory() ? walk(`${d}/${f}`) : /\.tsx?$/.test(f) ? [`${d}/${f}`] : []));
+    const resolve = (key: string) => { try { return get(he, key); } catch { return undefined; } };
+    const bad: string[] = [];
+    for (const file of [...walk("src/app"), ...walk("src/server")]) {
+      for (const m of readFileSync(file, "utf8").matchAll(/(?:message|error): ["`]([a-zA-Z0-9_]+\.[a-zA-Z0-9_.]+)["`]/g)) {
+        if (typeof resolve(m[1]!) !== "string") bad.push(`${file}: ${m[1]}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
 });

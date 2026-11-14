@@ -7,7 +7,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
 import type { RowError } from "@/lib/import/types";
 import { formatMoney } from "@/lib/money";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { getPreview } from "@/server/import/service";
 import { loadCategories } from "@/server/months";
@@ -17,6 +17,7 @@ import { commitImportAction } from "../../../actions";
 export default async function BatchPreview({ params }: { params: Promise<{ id: string; batchId: string }> }) {
   await requireAdvisor();
   const { id, batchId } = await params;
+  await requireOpenHousehold(id);
   const exists = await db.importBatch.findFirst({ where: { id: batchId, householdId: id }, select: { id: true } });
   if (!exists) notFound();
   const { batch, rows } = await getPreview(id, batchId);

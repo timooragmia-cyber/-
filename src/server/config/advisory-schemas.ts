@@ -48,5 +48,7 @@ export const ADVISORY_SCHEMAS: Record<string, z.ZodType> = {
     falling: z.object({ primeDeltaPpm: z.number().int(), primeChangeAfter: z.number().int().min(0), resetDeltaPpm: z.number().int(), inflationPpm: z.number().int() }),
   }),
   "plan.params": z.object({ savingsShareOfSurplusPpm: z.number().int().min(0).max(1_000_000), minSubscriptionAnnualAgorot: z.number().int().min(0) }),
+  "privacy.retention_years": z.number().int().min(1).max(30).nullable(),
+  "privacy.request_response_days": z.number().int().min(1).max(90),
   "cashflow.calendar": z.object({ lookbackMonths: z.number().int().min(2).max(12), minMonths: z.number().int().min(2).max(12), projectionDays: z.number().int().min(7).max(92) }),
 };

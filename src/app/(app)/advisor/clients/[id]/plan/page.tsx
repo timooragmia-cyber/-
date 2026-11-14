@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/select";
 import { formatMoney, type MoneyLocale } from "@/lib/money";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { getAdvisoryParameter } from "@/server/config/advisory";
 import { listPlan } from "@/server/plan/service";
 import { recommendationText } from "@/server/plan/text";
@@ -18,6 +18,7 @@ const tone = { PROPOSED: "warn", APPROVED: "ok", IN_PROGRESS: "neutral", DONE: "
 export default async function PlanPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const t = await getTranslations();
   const locale = (await getLocale()) as MoneyLocale;
   const [recs, threshold] = await Promise.all([listPlan(user, id), getAdvisoryParameter<number | null>("debt.expensive_threshold_ppm")]);

@@ -7,7 +7,7 @@ import { addMonths, periodOf } from "@/lib/domain/period";
 import { parseAmount } from "@/lib/money";
 import { audit } from "@/server/audit";
 import type { CurrentUser } from "@/server/auth/dal";
-import { assertHouseholdAccess } from "@/server/auth/dal-guards";
+import { assertHouseholdAccess } from "@/server/auth/dal";
 import { getAdvisoryParameter } from "@/server/config/advisory";
 import { db } from "@/server/db";
 import { attributionDate } from "@/server/months";
@@ -80,7 +80,7 @@ export async function latestBalances(householdId: string) {
 
 /** Card cycles, bank costs, per account (last N months). */
 export async function accountsAnalysis(user: CurrentUser, householdId: string, months = 3) {
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   const since = new Date(`${addMonths(periodOf(new Date()), -months)}-01T00:00:00Z`);
   const accounts = await latestBalances(householdId);
   const txns = await db.transaction.findMany({
@@ -108,7 +108,7 @@ export async function accountsAnalysis(user: CurrentUser, householdId: string, m
 }
 
 export async function cashflow(user: CurrentUser, householdId: string) {
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   const p = await getAdvisoryParameter<{ lookbackMonths: number; minMonths: number; projectionDays: number }>("cashflow.calendar");
   const current = periodOf(new Date());
   const months = Array.from({ length: p.lookbackMonths }, (_, i) => addMonths(current, -(i + 1))).reverse();

@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Tabs } from "@/components/app/tabs";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { db } from "@/server/db";
 
 export default async function ClientLayout({ children, params }: { children: React.ReactNode; params: Promise<{ id: string }> }) {
   await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const h = await db.household.findUnique({ where: { id }, select: { displayName: true, city: true } });
   if (!h) notFound();
   const t = await getTranslations("tabs");
@@ -34,6 +35,7 @@ export default async function ClientLayout({ children, params }: { children: Rea
           { href: `${base}/reports`, label: t("reports") },
           { href: `${base}/calculations`, label: t("calculations") },
           { href: `${base}/tasks`, label: t("tasks") },
+          { href: `/advisor/privacy/${id}`, label: t("privacy") },
         ]}
       />
       {children}

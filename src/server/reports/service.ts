@@ -1,7 +1,7 @@
 import "server-only";
 import { audit } from "@/server/audit";
 import type { CurrentUser } from "@/server/auth/dal";
-import { assertHouseholdAccess } from "@/server/auth/dal-guards";
+import { assertHouseholdAccess } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { readDecrypted, storeEncrypted } from "@/server/storage";
 import { buildReportHtml, type ReportKind } from "./build";
@@ -9,7 +9,7 @@ import { htmlToPdf } from "./pdf";
 
 export async function generateReport(user: CurrentUser, householdId: string, kind: ReportKind, locale: "he" | "ar", period: string | null) {
   if (user.role !== "ADVISOR") throw new Error("Advisor only");
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   const { html, period: used } = await buildReportHtml(user, householdId, kind, locale, period);
   const pdf = await htmlToPdf(html, { left: "T.A Mortgages", right: "" });
   const { storageKey, sha256 } = await storeEncrypted(pdf);
@@ -28,7 +28,7 @@ export async function releaseReport(user: CurrentUser, householdId: string, id: 
 export async function readReport(user: CurrentUser, id: string) {
   const r = await db.report.findUnique({ where: { id }, include: { household: { select: { displayName: true } } } });
   if (!r) return null;
-  assertHouseholdAccess(user, r.householdId);
+  await assertHouseholdAccess(user, r.householdId);
   if (user.role === "CLIENT" && !r.releasedAt) return null;
   const bytes = await readDecrypted(r.storageKey);
   await audit({ action: "EXPORT", actorUserId: user.id, actorRole: user.role, entityType: "Report", entityId: r.id, householdId: r.householdId });

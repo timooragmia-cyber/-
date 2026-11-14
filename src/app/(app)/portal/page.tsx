@@ -45,6 +45,13 @@ export default async function PortalPage() {
         <Link href="/portal/upload" className="rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium">{t("portalMore.uploadCta")}</Link>
       </div>
 
+      {!user.totpEnabled && (
+        <div role="note" className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-warn bg-warn-bg p-3 text-sm">
+          <p><b>{t("security2fa.promptTitle")}</b> {t("security2fa.promptBody")}</p>
+          <Link href="/login/setup-2fa" className="rounded-md bg-brand px-3 py-1.5 font-medium text-brand-foreground">{t("security2fa.enable")}</Link>
+        </div>
+      )}
+
       <Card>
         <CardTitle>{t("portal.statusHeadline")}</CardTitle>
         {latest ? (

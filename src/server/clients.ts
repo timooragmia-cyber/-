@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { audit } from "@/server/audit";
 import type { CurrentUser } from "@/server/auth/dal";
-import { assertHouseholdAccess } from "@/server/auth/dal-guards";
+import { assertHouseholdAccess } from "@/server/auth/dal";
 import { hashPassword } from "@/server/auth/password";
 import { db } from "@/server/db";
 import { parseAmount } from "@/lib/money";
@@ -228,7 +228,7 @@ export async function addTask(user: CurrentUser, householdId: string, input: z.i
 
 /** Advisor can set any status; the client can only move their own visible tasks between OPEN/IN_PROGRESS/DONE. */
 export async function setTaskStatus(user: CurrentUser, householdId: string, taskId: string, status: "OPEN" | "IN_PROGRESS" | "DONE" | "CANCELLED") {
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   const task = await db.actionItem.findFirstOrThrow({ where: { id: taskId, householdId } });
   if (user.role === "CLIENT" && (!task.visibleToClient || status === "CANCELLED")) throw new Error("Forbidden");
   await db.actionItem.update({ where: { id: task.id }, data: { status, completedAt: status === "DONE" ? new Date() : null } });

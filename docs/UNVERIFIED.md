@@ -1,6 +1,6 @@
 # Unverified items (must be checked before relying on them)
 
-Updated: Phase 4.
+Updated: Phase 5 (release 1.0.0).
 
 | # | Item | Where | Status | Owner / when |
 |---|---|---|---|---|
@@ -8,7 +8,7 @@ Updated: Phase 4.
 | 2 | Management fee legal ceilings and market benchmarks per product | `fee_benchmarks` | **Seeded UNVERIFIED from secondary public sources** (URL + notes per row): pension 6%/0.5%, provident & managers' insurance 4%/1.05%, benchmarks from the 2024 default-fund tender and 2024 industry average. Study-fund ceiling and general-pension rows **empty** (conflicting / not researched). Investment provident fund ceiling assumed equal to provident fund | Advisor verifies each row on the configuration screen (source URL required) |
 | 3 | Advisory defaults | `advisory_parameters` | Emergency fund 3–6 months, grace days 10 and trend threshold 1% **confirmed by the advisor (2026-11-14)**. Health-score weights/targets, recurring-detection and highlight thresholds: **awaiting confirmation** on the configuration screen | Advisor |
 | 4 | "Expensive debt" interest threshold | `debt.expensive_threshold_ppm` | **Empty** — until set, debts are "unknown", no EXPENSIVE_DEBT actions are generated and INVEST_SURPLUS is blocked (conservative) | Advisor sets it on the configuration screen |
-| 5 | Privacy Protection Law, Amendment 13 obligations (database registration/notice duties, security regulations level, breach reporting, DPO need, retention) | Process + Phase 5 | Architecture supports consent, audit, export, purge, minimization. **Legal requirements not verified** | Advisor's legal counsel. Implementation in Phase 5 |
+| 5 | Privacy Protection Law, Amendment 13 obligations (registration/notification duties, DPO need, security-regulations level, breach reporting deadline, processor agreements) | `docs/PRIVACY.md` | Technical measures **implemented** (export, requests with due dates, restrict→purge, audit, encryption, CSP). Legal requirements taken from **secondary sources only** — see the checklist in `docs/PRIVACY.md` | Legal counsel |
 | 6 | Consent text (`textVersion` "2026-01-draft") | `consents` | Placeholder version label. No legal text written yet | Legal counsel |
 | 7 | Bank/card export formats (Leumi, Hapoalim, Discount, Mizrahi-Tefahot, Isracard, Cal, Max) | `src/lib/import/presets.ts` | Presets are **unverified** (shown as such in the wizard). Header auto-detection + manual wizard handle any layout; tested only on fictional fixtures | Advisor to supply anonymized samples → presets get locked + tested |
 | 8 | Brand colors and logo | `globals.css` tokens | Placeholder navy/gold | Advisor to supply brand kit |
@@ -31,4 +31,9 @@ Updated: Phase 4.
 | 25 | Mortgage scenarios | `mortgage.scenarios` | Base inflation 2.5%; stress prime/resets +2% and inflation 4%; falling −1% and 2% — **advisor assumptions**, not forecasts | Advisor to confirm |
 | 26 | Early-repayment fee | Refinance simulator | Not computed — entered by the advisor from the bank's written quote (the official formula needs the bank's average rates on the repayment date) | By design |
 | 27 | Plan parameters | `plan.params` | Emergency-fund deposit = 50% of the average surplus; subscriptions flagged above ₪300/yr — advisory defaults awaiting confirmation | Advisor |
-| 28 | Docker image with Chromium | `Dockerfile` | Debian `chromium` added to the runtime image (`CHROMIUM_PATH`). **Image build not tested here** (no Docker daemon in the build environment); PDF rendering was tested with Playwright's Chromium | Verify on the first deploy (generate one report) |
+| 28 | Docker images (app with Chromium, backup tooling) and Caddy config | `Dockerfile`, `deploy/` | Compose file validated (`docker compose config`). **Images not built and Caddyfile not run here** (no Docker daemon / no Caddy binary in the build environment). Backup/restore scripts **were tested** locally (pg_dump → age → restore drill OK); the S3 upload path was not | First deploy: follow `docs/DEPLOYMENT.md` §4 checks + one backup + one restore drill |
+| 29 | Record-retention period after a deletion request | `privacy.retention_years` | **Empty on purpose** — no authoritative source found for the period that applies to this advisor (licensing regulations, tax record keeping, limitation periods). Until set, the purge refuses to run | Advisor + legal counsel |
+| 30 | Response deadline for data-subject requests | `privacy.request_response_days` | 30 days, from secondary summaries of the inspection regulations — unconfirmed | Legal counsel |
+| 31 | Breach notification deadline / process | `docs/PRIVACY.md` | Secondary sources mention 72 hours to the Privacy Protection Authority; not confirmed. No in-app breach workflow | Legal counsel; office procedure |
+| 32 | Client 2FA | Portal | Optional with a persistent prompt (advisor's decision). No in-app reset flow — the advisor resets via SQL (`docs/DEPLOYMENT.md` §8) | Revisit if client adoption is low |
+| 33 | Dev-tooling advisories | `npm audit` | 8 moderate advisories in ESLint/typescript-eslint (development only, not in the image). Production tree: 0 | Update tooling when fixed upstream |

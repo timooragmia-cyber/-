@@ -6,13 +6,14 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Field, Textarea } from "@/components/ui/select";
 import { periodOf, addMonths } from "@/lib/domain/period";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { addNoteAction, addTaskAction, setTaskStatusAction } from "../actions";
 
 export default async function TasksPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const t = await getTranslations();
   const [notes, tasks] = await Promise.all([
     db.advisorNote.findMany({ where: { householdId: id }, orderBy: { createdAt: "desc" }, take: 50 }),

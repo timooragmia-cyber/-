@@ -7,7 +7,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { formatMoney, formatPpmPercent, MoneyError, parseAmount, parsePercentToPpm, type MoneyLocale } from "@/lib/money";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { consolidateSim, debtOverview, optimizeSim, refinanceSim } from "@/server/debt/service";
 import * as A from "../actions";
 
@@ -24,6 +24,7 @@ const safe = <T,>(fn: () => T): T | null => {
 export default async function DebtPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[]>> }) {
   const user = await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const sp = await searchParams;
   const one = (k: string) => (Array.isArray(sp[k]) ? (sp[k] as string[])[0] : (sp[k] as string | undefined));
   const t = await getTranslations();

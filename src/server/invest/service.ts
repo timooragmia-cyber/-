@@ -9,7 +9,7 @@ import { parseAmount, parsePercentToPpm } from "@/lib/money";
 import { resolveRule, RuleUnavailableError } from "@/lib/tax/rules";
 import { audit } from "@/server/audit";
 import type { CurrentUser } from "@/server/auth/dal";
-import { assertHouseholdAccess } from "@/server/auth/dal-guards";
+import { assertHouseholdAccess } from "@/server/auth/dal";
 import { getAdvisoryParameter } from "@/server/config/advisory";
 import { db } from "@/server/db";
 import { householdInsights } from "@/server/months";
@@ -29,7 +29,7 @@ function toPropertyInput(p: Awaited<ReturnType<typeof db.property.findMany>>[num
 }
 
 export async function investmentsOverview(user: CurrentUser, householdId: string) {
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   const [props, accounts, deposits, assumptions, rows] = await Promise.all([
     db.property.findMany({ where: { householdId }, orderBy: { createdAt: "asc" } }),
     db.portfolioAccount.findMany({ where: { householdId }, include: { holdings: { include: { valuations: true } }, transactions: true }, orderBy: { createdAt: "asc" } }),
@@ -113,7 +113,7 @@ export async function investmentsOverview(user: CurrentUser, householdId: string
 
 /** Route comparison with the conservative-order checklist built from the client's real data. */
 export async function routesComparison(user: CurrentUser, householdId: string, amount: bigint, months: number) {
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   const [household, routes, assumptions, ef, rows, insights, savings] = await Promise.all([
     db.household.findUniqueOrThrow({ where: { id: householdId }, select: { riskTolerance: true, displayName: true } }),
     getAdvisoryParameter<RouteDef[]>("investment.routes"),
@@ -171,20 +171,20 @@ export const propertySchema = z.object({
   currentValue: money(), valueAsOf: date, monthlyRent: money(false), monthlyExpenses: money(false), mortgageBalance: money(false), monthlyMortgagePayment: money(false),
 });
 
-const guard = (user: CurrentUser, householdId: string) => {
+const guard = async (user: CurrentUser, householdId: string) => {
   if (user.role !== "ADVISOR") throw new Error("Advisor only");
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
 };
 
 export async function saveProperty(user: CurrentUser, householdId: string, input: z.infer<typeof propertySchema>, id?: string) {
-  guard(user, householdId);
+  await guard(user, householdId);
   const data = { ...input, city: input.city || null };
   const p = id ? await db.property.update({ where: { id: (await db.property.findFirstOrThrow({ where: { id, householdId } })).id }, data }) : await db.property.create({ data: { householdId, ...data } });
   await audit({ action: id ? "UPDATE" : "CREATE", actorUserId: user.id, actorRole: user.role, entityType: "Property", entityId: p.id, householdId });
 }
 
 export async function deleteEntity(user: CurrentUser, householdId: string, kind: "property" | "account" | "deposit" | "txn", id: string) {
-  guard(user, householdId);
+  await guard(user, householdId);
   if (kind === "property") await db.property.deleteMany({ where: { id, householdId } });
   if (kind === "account") await db.portfolioAccount.deleteMany({ where: { id, householdId } });
   if (kind === "deposit") await db.savingsDeposit.deleteMany({ where: { id, householdId } });
@@ -201,7 +201,7 @@ export const accountSchema = z.object({
 });
 
 export async function saveAccount(user: CurrentUser, householdId: string, input: z.infer<typeof accountSchema>, id?: string) {
-  guard(user, householdId);
+  await guard(user, householdId);
   const sum = (Object.values(input.target) as number[]).reduce((s, x) => s + x, 0);
   if (sum !== 0 && sum !== 1_000_000) return { ok: false as const, error: "target_sum" };
   const data = { name: input.name, institution: input.institution, targetAllocation: sum ? input.target : undefined };
@@ -213,7 +213,7 @@ export async function saveAccount(user: CurrentUser, householdId: string, input:
 export const holdingSchema = z.object({ name: z.string().trim().min(1).max(120), symbol: z.string().trim().max(30).optional(), assetClass: z.enum(ASSET) });
 
 export async function addHolding(user: CurrentUser, householdId: string, accountId: string, input: z.infer<typeof holdingSchema>) {
-  guard(user, householdId);
+  await guard(user, householdId);
   const acc = await db.portfolioAccount.findFirstOrThrow({ where: { id: accountId, householdId } });
   await db.portfolioHolding.create({ data: { accountId: acc.id, name: input.name, symbol: input.symbol || null, assetClass: input.assetClass } });
   await audit({ action: "CREATE", actorUserId: user.id, actorRole: user.role, entityType: "PortfolioHolding", entityId: acc.id, householdId });
@@ -236,7 +236,7 @@ export const txnSchema = z.object({
 }).refine((v) => !["BUY", "SELL"].includes(v.type) || (v.holdingId && v.units > 0n), "holding_and_units_required");
 
 export async function addTxn(user: CurrentUser, householdId: string, accountId: string, input: z.infer<typeof txnSchema>) {
-  guard(user, householdId);
+  await guard(user, householdId);
   const acc = await db.portfolioAccount.findFirstOrThrow({ where: { id: accountId, householdId } });
   if (input.holdingId) await db.portfolioHolding.findFirstOrThrow({ where: { id: input.holdingId, accountId: acc.id } });
   await db.portfolioTxn.create({ data: { accountId: acc.id, holdingId: input.holdingId, date: input.date, type: input.type, units: input.units, amount: input.amount, feeKind: input.type === "FEE" ? (input.feeKind ?? "OTHER") : null, note: input.note || null, createdByUserId: user.id } });
@@ -244,7 +244,7 @@ export async function addTxn(user: CurrentUser, householdId: string, accountId: 
 }
 
 export async function addValuations(user: CurrentUser, householdId: string, accountId: string, asOf: Date, values: { holdingId: string; value: bigint }[]) {
-  guard(user, householdId);
+  await guard(user, householdId);
   const acc = await db.portfolioAccount.findFirstOrThrow({ where: { id: accountId, householdId }, include: { holdings: { select: { id: true } } } });
   const allowed = new Set(acc.holdings.map((h) => h.id));
   for (const v of values) {
@@ -260,7 +260,7 @@ export const depositSchema = z.object({
 });
 
 export async function saveDeposit(user: CurrentUser, householdId: string, input: z.infer<typeof depositSchema>, id?: string) {
-  guard(user, householdId);
+  await guard(user, householdId);
   const data = { kind: input.kind, institution: input.institution, label: input.label, balance: input.balance, balanceAsOf: input.balanceAsOf, annualRatePpm: input.annualRate, feePpm: input.fee, maturityDate: input.maturityDate };
   const d = id ? await db.savingsDeposit.update({ where: { id: (await db.savingsDeposit.findFirstOrThrow({ where: { id, householdId } })).id }, data }) : await db.savingsDeposit.create({ data: { householdId, ...data } });
   await audit({ action: id ? "UPDATE" : "CREATE", actorUserId: user.id, actorRole: user.role, entityType: "SavingsDeposit", entityId: d.id, householdId });

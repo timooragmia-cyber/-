@@ -1,7 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { requiresSecondFactor } from "./dal-guards";
+import { db } from "@/server/db";
+import { assertHouseholdAccess as assertTenant, type GuardUser, requiresSecondFactor } from "./dal-guards";
 import { getSession } from "./session";
 
 /**
@@ -88,4 +89,43 @@ export async function requireClient(): Promise<CurrentUser & { householdId: stri
   return user as CurrentUser & { householdId: string };
 }
 
-export { assertHouseholdAccess, canAccessHousehold, ForbiddenError } from "./dal-guards";
+export { canAccessHousehold, ForbiddenError } from "./dal-guards";
+
+/** Thrown when a household is restricted after a deletion request (no access, no processing). */
+export class HouseholdRestrictedError extends Error {
+  constructor() {
+    super("Household is restricted (privacy deletion request)");
+    this.name = "HouseholdRestrictedError";
+  }
+}
+
+/** Per-request cache: one indexed lookup however many services a page calls. */
+const restrictionOf = cache(async (householdId: string) => {
+  const h = await db.household.findUnique({ where: { id: householdId }, select: { restrictedAt: true } });
+  return h ? h.restrictedAt : undefined;
+});
+
+export async function isHouseholdRestricted(householdId: string): Promise<boolean> {
+  return (await restrictionOf(householdId)) != null;
+}
+
+/**
+ * Tenant guard + privacy restriction. Every service touching household data calls this.
+ * A restricted household is closed to everyone, the advisor included; only the privacy
+ * module (export for an access request, lift restriction, purge) passes `allowRestricted`.
+ */
+export async function assertHouseholdAccess(user: GuardUser, householdId: string, opts: { allowRestricted?: boolean } = {}): Promise<void> {
+  assertTenant(user, householdId);
+  if (opts.allowRestricted) return;
+  if (await isHouseholdRestricted(householdId)) throw new HouseholdRestrictedError();
+}
+
+/**
+ * Advisor pages of one household. Layouts and pages render in parallel in the App Router,
+ * so every page calls this itself: a restricted file redirects to its privacy page.
+ */
+export async function requireOpenHousehold(householdId: string): Promise<CurrentUser> {
+  const user = await requireAdvisor();
+  if (await isHouseholdRestricted(householdId)) redirect(`/advisor/privacy/${householdId}`);
+  return user;
+}

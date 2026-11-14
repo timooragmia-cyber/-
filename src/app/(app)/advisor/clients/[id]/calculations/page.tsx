@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Card } from "@/components/ui/card";
 import { formatMoney, type MoneyLocale } from "@/lib/money";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { db } from "@/server/db";
 
 const HEADLINE = ["totalTax", "tax", "annualTax", "difference"];
@@ -10,6 +10,7 @@ const HEADLINE = ["totalTax", "tax", "annualTax", "difference"];
 export default async function CalculationsPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const t = await getTranslations();
   const locale = (await getLocale()) as MoneyLocale;
   const runs = await db.calculationRun.findMany({ where: { householdId: id }, orderBy: { createdAt: "desc" }, take: 50 });

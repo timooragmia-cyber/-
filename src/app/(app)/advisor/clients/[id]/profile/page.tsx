@@ -7,7 +7,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Field, Select } from "@/components/ui/select";
 import { formatMoney, type MoneyLocale } from "@/lib/money";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { getHouseholdProfile } from "@/server/households";
 import * as A from "../actions";
@@ -28,6 +28,7 @@ const INCOME = ["SALARY", "SELF_EMPLOYMENT", "BONUS", "RENTAL", "PENSION", "ALLO
 export default async function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const h = await getHouseholdProfile(user, id);
   if (!h) notFound();
   const logins = await db.user.findMany({ where: { householdId: id }, select: { id: true, email: true, lastLoginAt: true, mustChangePassword: true } });

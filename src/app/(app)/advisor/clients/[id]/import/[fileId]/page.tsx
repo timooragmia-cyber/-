@@ -6,7 +6,7 @@ import { Field, Select, Textarea } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { PRESETS } from "@/lib/import/presets";
 import type { MappingConfig } from "@/lib/import/types";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { UnsupportedFileError } from "@/server/import/adapters";
 import { loadFileTables, proposeMapping } from "@/server/import/service";
 import { db } from "@/server/db";
@@ -29,6 +29,7 @@ function ColSelect({ name, value, options, notUsed }: { name: string; value: num
 export default async function ImportWizard({ params, searchParams }: { params: Promise<{ id: string; fileId: string }>; searchParams: Promise<{ account?: string; sheet?: string }> }) {
   await requireAdvisor();
   const { id, fileId } = await params;
+  await requireOpenHousehold(id);
   const sp = await searchParams;
   const t = await getTranslations();
   const file = await db.uploadedFile.findFirst({ where: { id: fileId, householdId: id } });

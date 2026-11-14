@@ -8,7 +8,7 @@ import { detectRecurring, installmentBurden } from "@/lib/analysis/recurring";
 import { addMonths, isPeriod } from "@/lib/domain/period";
 import { audit } from "@/server/audit";
 import type { CurrentUser } from "@/server/auth/dal";
-import { assertHouseholdAccess } from "@/server/auth/dal-guards";
+import { assertHouseholdAccess } from "@/server/auth/dal";
 import { getAdvisoryParameter } from "@/server/config/advisory";
 import { db } from "@/server/db";
 
@@ -66,7 +66,7 @@ export async function computeLiveClose(householdId: string, period: string): Pro
 
 /** Close a month: writes a NEW immutable snapshot version (re-closing never edits history). */
 export async function closeMonth(user: CurrentUser, householdId: string, period: string) {
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   if (user.role !== "ADVISOR") throw new Error("Advisor only");
   const result = await computeLiveClose(householdId, period);
   if (result.transactionCount === 0) throw new Error("NO_TRANSACTIONS");

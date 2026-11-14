@@ -8,6 +8,7 @@ import { UnsupportedFileError } from "@/server/import/adapters";
 import { uploadStatement } from "@/server/import/service";
 import { rateLimit } from "@/server/rate-limit";
 import { updateRecommendation } from "@/server/plan/service";
+import { createPrivacyRequest, requestSchema } from "@/server/privacy/service";
 
 /** Client actions: the household id always comes from the session, never from the form. */
 export async function clientUploadAction(_p: ActionState, f: FormData): Promise<ActionState> {
@@ -41,4 +42,14 @@ export async function clientPlanStatusAction(_p: ActionState, f: FormData): Prom
   await updateRecommendation(user, user.householdId, String(f.get("recId")), { status });
   revalidatePath("/portal");
   return { ok: true };
+}
+
+export async function clientPrivacyRequestAction(_p: ActionState, f: FormData): Promise<ActionState> {
+  const user = await requireClient();
+  if (!rateLimit(`privacy-req:${user.id}`, 5, 24 * 60 * 60_000).ok) return { error: "auth.rateLimited" };
+  const v = requestSchema.safeParse({ type: f.get("type"), details: f.get("details") ?? undefined });
+  if (!v.success) return { error: "form.invalid" };
+  await createPrivacyRequest(user, user.householdId, v.data);
+  revalidatePath("/portal/privacy");
+  return { ok: true, message: "portalPrivacy.requestSent" };
 }

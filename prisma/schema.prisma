@@ -127,6 +127,10 @@ model Household {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   archivedAt      DateTime?
+  // Privacy: a deletion request first RESTRICTS the file (no access, no processing, client
+  // logins disabled). It is purged once restrictedAt + privacy.retention_years has passed.
+  restrictedAt     DateTime?
+  restrictedReason String?
 
   members               Person[]
   users                 User[]
@@ -153,6 +157,7 @@ model Household {
   loans                 Loan[]
   recommendations       Recommendation[]
   reports               Report[]
+  privacyRequests       PrivacyRequest[]
 
   @@map("households")
 }
@@ -816,6 +821,9 @@ enum AuditAction {
   IMPORT_UNDO
   MONTH_CLOSE
   CONFIG_CHANGE
+  RESTRICT
+  UNRESTRICT
+  PURGE
 }
 
 model AuditLog {
@@ -1165,4 +1173,41 @@ model Report {
 
   @@index([householdId, createdAt])
   @@map("reports")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Privacy (Phase 5)
+// ─────────────────────────────────────────────────────────────
+
+enum PrivacyRequestType {
+  ACCESS
+  CORRECTION
+  DELETION
+}
+
+enum PrivacyRequestStatus {
+  OPEN
+  DONE
+  REJECTED
+}
+
+// Data-subject requests and how they were handled (evidence for the regulator).
+model PrivacyRequest {
+  id              String               @id @default(cuid())
+  householdId     String
+  household       Household            @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  type            PrivacyRequestType
+  status          PrivacyRequestStatus @default(OPEN)
+  receivedAt      DateTime             @default(now())
+  dueAt           DateTime?
+  // Free text written by the client (portal) or the advisor (phone/letter).
+  details         String?
+  createdByUserId String?
+  handledAt       DateTime?
+  handledByUserId String?
+  resolution      String?
+
+  @@index([householdId, receivedAt])
+  @@index([status, dueAt])
+  @@map("privacy_requests")
 }

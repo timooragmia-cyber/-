@@ -2,13 +2,14 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { formatMoney, formatPpmPercent, type MoneyLocale } from "@/lib/money";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { investmentsOverview } from "@/server/invest/service";
 import { AccountForm, DeleteButton, DepositForm, HoldingForm, PropertyForm, TxnForm, ValuationForm } from "./forms";
 
 export default async function InvestmentsPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const t = await getTranslations();
   const locale = (await getLocale()) as MoneyLocale;
   const o = await investmentsOverview(user, id);

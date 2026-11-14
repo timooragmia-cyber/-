@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { isPeriod } from "@/lib/domain/period";
 import { formatMoney, formatPpmPercent, toDisplayNumber } from "@/lib/money";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { computeLiveClose, getClosedMonths, loadCategories, periodsWithData } from "@/server/months";
 import { catName, type Loc } from "@/server/view";
 import { closeMonthAction, setBudgetAction } from "../actions";
@@ -16,6 +16,7 @@ import { closeMonthAction, setBudgetAction } from "../actions";
 export default async function MonthsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ period?: string }> }) {
   await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const sp = await searchParams;
   const t = await getTranslations();
   const locale = (await getLocale()) as Loc;

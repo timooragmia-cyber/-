@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/select";
 import { formatMoney, formatPpmPercent, MoneyError, parseAmount, type MoneyLocale } from "@/lib/money";
 import { RuleUnavailableError } from "@/lib/tax/rules";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { routesComparison } from "@/server/invest/service";
 
 export default async function RoutesPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ amount?: string; years?: string }> }) {
   const user = await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const sp = await searchParams;
   const t = await getTranslations();
   const locale = (await getLocale()) as MoneyLocale;

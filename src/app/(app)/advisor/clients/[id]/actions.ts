@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { ActionState } from "@/lib/action-state";
 import type { MappingConfig } from "@/lib/import/types";
-import { requireAdvisor } from "@/server/auth/dal";
+import { isHouseholdRestricted, requireAdvisor } from "@/server/auth/dal";
 import { recategorizeTransaction } from "@/server/categorization";
 import * as clients from "@/server/clients";
 import { UnsupportedFileError } from "@/server/import/adapters";
@@ -38,6 +38,8 @@ const done = (householdId: string, message = "form.saved"): ActionState => {
 async function run(f: FormData, fn: (householdId: string, user: Awaited<ReturnType<typeof requireAdvisor>>) => Promise<ActionState | void>): Promise<ActionState> {
   const user = await requireAdvisor();
   const householdId = hid(f);
+  // A restricted household (privacy deletion request) accepts no processing at all.
+  if (await isHouseholdRestricted(householdId)) return { error: "privacy.restrictedError" };
   try {
     return (await fn(householdId, user)) ?? done(householdId);
   } catch (e) {

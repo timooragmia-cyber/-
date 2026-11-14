@@ -27,7 +27,10 @@ export default async function AccountPage() {
       </Card>
       <Card>
         <CardTitle>{t("account.twoFactor")}</CardTitle>
-        <Badge tone={user.totpEnabled ? "ok" : "neutral"}>{t(user.totpEnabled ? "account.enabled" : "account.disabled")}</Badge>
+        <div className="flex flex-wrap items-center gap-3">
+          <Badge tone={user.totpEnabled ? "ok" : "neutral"}>{t(user.totpEnabled ? "account.enabled" : "account.disabled")}</Badge>
+          {!user.totpEnabled && <Link href="/login/setup-2fa" className="font-medium text-brand underline">{t("security2fa.enable")}</Link>}
+        </div>
       </Card>
       <Card>
         <CardTitle>{t("pwd.title")}</CardTitle>

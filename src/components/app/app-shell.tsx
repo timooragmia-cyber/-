@@ -16,6 +16,7 @@ export async function AppShell({ user, children }: { user: CurrentUser; children
       : [
           { href: "/portal", label: t("nav.portal") },
           { href: "/portal/upload", label: t("nav.upload") },
+          { href: "/portal/privacy", label: t("nav.myData") },
           { href: "/account", label: t("nav.account") },
         ];
   return (

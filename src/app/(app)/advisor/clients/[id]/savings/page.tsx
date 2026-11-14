@@ -7,7 +7,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/select";
 import { formatMoney, formatPpmPercent, type MoneyLocale } from "@/lib/money";
-import { requireAdvisor } from "@/server/auth/dal";
+import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { savingsOverview } from "@/server/savings/service";
 import { deleteProductAction, importProductsAction, saveAssumptionsAction } from "../actions";
 import { ProductForm } from "./product-form";
@@ -17,6 +17,7 @@ const tone = { ABOVE_CEILING: "bad", ABOVE_BENCHMARK: "warn", OK: "ok", NO_BENCH
 export default async function SavingsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ product?: string }> }) {
   const user = await requireAdvisor();
   const { id } = await params;
+  await requireOpenHousehold(id);
   const sp = await searchParams;
   const t = await getTranslations();
   const locale = (await getLocale()) as MoneyLocale;

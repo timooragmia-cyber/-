@@ -7,7 +7,7 @@ import { PRESETS } from "@/lib/import/presets";
 import type { MappingConfig, NormalizedRow, RawTable, RowError } from "@/lib/import/types";
 import { audit } from "@/server/audit";
 import type { CurrentUser } from "@/server/auth/dal";
-import { assertHouseholdAccess } from "@/server/auth/dal-guards";
+import { assertHouseholdAccess } from "@/server/auth/dal";
 import { categorizeWith, loadRules } from "@/server/categorization";
 import { db } from "@/server/db";
 import { readDecrypted, storeEncrypted } from "@/server/storage";
@@ -17,7 +17,7 @@ const ALLOWED_EXT = /\.(csv|txt|xlsx|xls)$/i;
 
 /** Advisor or client uploads a statement. Clients' files wait for the advisor (PENDING_REVIEW). */
 export async function uploadStatement(user: CurrentUser, householdId: string, file: File) {
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   if (!ALLOWED_EXT.test(file.name)) throw new UnsupportedFileError("UNSUPPORTED");
   if (file.size > MAX_FILE_BYTES) throw new UnsupportedFileError("TOO_LARGE");
   const bytes = new Uint8Array(await file.arrayBuffer());
@@ -77,7 +77,7 @@ export type PreviewSummary = { total: number; importable: number; duplicates: nu
  * Nothing touches the transactions table until commitImport.
  */
 export async function createPreview(user: CurrentUser, p: { householdId: string; accountId: string; fileId: string; sheetIndex: number; mapping: MappingConfig; saveMapping: boolean }) {
-  assertHouseholdAccess(user, p.householdId);
+  await assertHouseholdAccess(user, p.householdId);
   if (user.role !== "ADVISOR") throw new Error("Advisor only");
   const account = await db.financialAccount.findFirstOrThrow({ where: { id: p.accountId, householdId: p.householdId } });
   const { adapter, tables, fileName } = await loadFileTables(p.householdId, p.fileId);
@@ -154,7 +154,7 @@ export async function getPreview(householdId: string, batchId: string) {
 
 /** Commit a PREVIEW batch. Duplicates are skipped (also guarded by the unique index). */
 export async function commitImport(user: CurrentUser, householdId: string, batchId: string) {
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   if (user.role !== "ADVISOR") throw new Error("Advisor only");
   const { batch, rows } = await getPreview(householdId, batchId);
   if (batch.status !== "PREVIEW") throw new Error("Batch is not in preview");
@@ -193,7 +193,7 @@ export async function commitImport(user: CurrentUser, householdId: string, batch
 
 /** Full undo: removes every transaction created by the batch. Closed-month snapshots stay as they were (immutable) and are flagged as changed. */
 export async function undoImport(user: CurrentUser, householdId: string, batchId: string) {
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   if (user.role !== "ADVISOR") throw new Error("Advisor only");
   const batch = await db.importBatch.findFirstOrThrow({ where: { id: batchId, householdId } });
   if (batch.status !== "COMMITTED") throw new Error("Only committed batches can be undone");

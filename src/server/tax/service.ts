@@ -6,7 +6,7 @@ import { parseCpiTable } from "@/lib/tax/cpi-import";
 import { RULE_SCHEMAS, RuleUnavailableError, type TaxRuleRow } from "@/lib/tax/rules";
 import { audit } from "@/server/audit";
 import type { CurrentUser } from "@/server/auth/dal";
-import { assertHouseholdAccess } from "@/server/auth/dal-guards";
+import { assertHouseholdAccess } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { readFileTables, UnsupportedFileError } from "@/server/import/adapters";
 import { CALCULATORS, type CalculatorName } from "./calculators";
@@ -44,7 +44,7 @@ export async function runCalculator(name: CalculatorName, raw: Record<string, st
 
 export async function saveRun(user: CurrentUser, householdId: string, name: CalculatorName, raw: Record<string, string>, title: string | null) {
   if (user.role !== "ADVISOR") throw new Error("Advisor only");
-  assertHouseholdAccess(user, householdId);
+  await assertHouseholdAccess(user, householdId);
   const out = await runCalculator(name, raw);
   if (!out.ok) return out;
   const r = out.result;
