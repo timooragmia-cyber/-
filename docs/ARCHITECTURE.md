@@ -1,6 +1,6 @@
 # Architecture — T.A Mortgages Financial Platform
 
-Status: **Phase 1** (import, categorization, monthly close, tracking). This document is the contract for every later phase.
+Status: **Phase 2** (accounts, cards, cash flow, long-term savings). This document is the contract for every later phase.
 
 ## 1. Product shape
 
@@ -101,6 +101,13 @@ The adapter interface (`ImportAdapter` in `src/lib/import/types.ts`) is `canHand
 - Refunds reduce their category. Uncategorized lines are counted and block nothing, but raise a warning.
 - Closing writes an immutable snapshot (new version on re-close) with the full breakdown, calc version and a hash of the transactions used. If the data later changes, the screen says so.
 - The client portal shows **closed months only**, never live unreviewed numbers.
+
+## 6b. Long-term savings (Phase 2)
+
+- Fee benchmarks and ceilings come only from `fee_benchmarks` (dated, sourced, verification state); `src/lib/savings/fee-flags.ts` compares, `fee-simulator.ts` projects (method: `docs/calculations/fee-simulator.md`).
+- Savings potential = extra balance at retirement if fees drop to the benchmark, base scenario, today's shekels.
+- Product reports enter through `ProductReportParser` (`src/server/savings/report-parsers.ts`); the clearinghouse XML parser plugs in there.
+- The client portal shows balances only; fee analysis and projections stay advisor-side until the action-plan approval flow (Phase 4).
 
 ## 7. Deployment (summary; the full guide comes in Phase 5)
 

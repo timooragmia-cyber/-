@@ -11,11 +11,15 @@ import { requireAdvisor } from "@/server/auth/dal";
 import { hasActiveConsent } from "@/server/clients";
 import { db } from "@/server/db";
 import * as A from "../actions";
+import { accountsAnalysis, netWorth } from "@/server/accounts";
+import { AccountDetails } from "./account-details";
+import { formatMoney, type MoneyLocale } from "@/lib/money";
+import { getLocale } from "next-intl/server";
 
 const INSTITUTIONS = ["LEUMI", "HAPOALIM", "DISCOUNT", "MIZRAHI_TEFAHOT", "ISRACARD", "CAL", "MAX", "OTHER"] as const;
 
 export default async function AccountsPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireAdvisor();
+  const user = await requireAdvisor();
   const { id } = await params;
   const t = await getTranslations();
   const [accounts, files, batches, members, consent] = await Promise.all([
@@ -25,6 +29,9 @@ export default async function AccountsPage({ params }: { params: Promise<{ id: s
     db.person.findMany({ where: { householdId: id }, select: { id: true, firstName: true } }),
     hasActiveConsent(id),
   ]);
+  const [analysis, nw] = await Promise.all([accountsAnalysis(user, id), netWorth(id, 6)]);
+  const locale = (await getLocale()) as MoneyLocale;
+  const lastNw = nw.at(-1);
   const fileTone = { PENDING_REVIEW: "warn", IMPORTED: "ok", REJECTED: "bad" } as const;
   const fileLabel = { PENDING_REVIEW: "upload.pending", IMPORTED: "upload.imported", REJECTED: "upload.rejected" } as const;
 
@@ -97,6 +104,25 @@ export default async function AccountsPage({ params }: { params: Promise<{ id: s
           )}
         </Card>
       </div>
+
+      {analysis.length > 0 && (
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:col-span-2">
+            {analysis.map((row) => <AccountDetails key={row.account.id} householdId={id} row={row} />)}
+          </div>
+          {lastNw && (lastNw.assets > 0n || lastNw.liabilities > 0n) && (
+            <Card>
+              <CardTitle>{t("acct.netWorth")}</CardTitle>
+              <p className={`num text-3xl font-bold ${lastNw.netWorth < 0n ? "text-bad" : ""}`}>{formatMoney(lastNw.netWorth, locale, { decimals: 0 })}</p>
+              <p className="text-sm text-muted">{t("acct.assets")} <span className="num">{formatMoney(lastNw.assets, locale, { decimals: 0 })}</span> · {t("acct.liabilities")} <span className="num">{formatMoney(lastNw.liabilities, locale, { decimals: 0 })}</span></p>
+              <ul className="mt-3 space-y-0.5 text-xs">
+                {nw.map((n) => <li key={n.period} className="flex justify-between"><span className="num">{n.period}</span><span className="num">{formatMoney(n.netWorth, locale, { decimals: 0 })}</span></li>)}
+              </ul>
+              <p className="mt-2 text-xs text-muted">{t("acct.netWorthNote")}</p>
+            </Card>
+          )}
+        </div>
+      )}
 
       <Card className="p-0 sm:p-0">
         <CardTitle className="px-4 pt-4">{t("batches.title")}</CardTitle>

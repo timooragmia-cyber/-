@@ -157,11 +157,17 @@ export async function householdInsights(householdId: string) {
   const highlights = cur?.result && prev?.result && prev.period === addMonths(cur.period, -1) ? monthOverMonthHighlights(cur.result, prev.result, highlightParams) : [];
 
   const last3 = closed.slice(0, 3);
+  // Emergency fund = positive bank balances ÷ average monthly expenses (last 3 closed months).
+  const avgExpenses = last3.length ? last3.reduce((s, m) => s + m.totals.expenses, 0n) / BigInt(last3.length) : 0n;
+  const banks = await db.financialAccount.findMany({ where: { householdId, kind: "BANK_ACCOUNT" }, include: { balances: { orderBy: { asOf: "desc" }, take: 1 } } });
+  const withBal = banks.filter((b) => b.balances[0]);
+  const liquid = withBal.reduce((s, b) => s + (b.balances[0]!.balance > 0n ? b.balances[0]!.balance : 0n), 0n);
+  const emergencyFundMonths = withBal.length && avgExpenses > 0n ? Number((liquid * 10n) / avgExpenses) / 10 : null;
   const health = computeHealthScore(
     {
       savingsRatePpm: avg(last3.map((m) => m.totals.savingsRatePpm)),
       fixedCostRatioPpm: avg(last3.flatMap((m) => (m.result?.fixedCostRatioPpm != null ? [m.result.fixedCostRatioPpm] : []))),
-      emergencyFundMonths: null,
+      emergencyFundMonths,
       debtServiceRatioPpm: null,
     },
     weights,
@@ -179,5 +185,5 @@ export async function householdInsights(householdId: string) {
   }));
   const deficitMonths = (n: number) => closed.slice(0, n).filter((m) => m.totals.surplus < 0n).length;
 
-  return { closed, recurring, installments, highlights, health, trend, deficitMonths: { m3: deficitMonths(3), m6: deficitMonths(6), m12: deficitMonths(12) } };
+  return { closed, recurring, installments, highlights, health, trend, emergencyFundMonths, deficitMonths: { m3: deficitMonths(3), m6: deficitMonths(6), m12: deficitMonths(12) } };
 }

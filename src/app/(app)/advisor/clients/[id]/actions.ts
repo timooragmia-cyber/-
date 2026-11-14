@@ -12,6 +12,8 @@ import { commitImport, createPreview, undoImport, uploadStatement } from "@/serv
 import { closeMonth } from "@/server/months";
 import { db } from "@/server/db";
 import { audit } from "@/server/audit";
+import * as savings from "@/server/savings/service";
+import { accountDetailsSchema, balanceSchema, recordBalance, updateAccountDetails } from "@/server/accounts";
 
 /**
  * Advisor server actions for one household. Every action re-checks the advisor session
@@ -238,5 +240,54 @@ export async function setTaskStatusAction(_p: ActionState, f: FormData) {
     const s = String(f.get("status"));
     if (!["OPEN", "IN_PROGRESS", "DONE", "CANCELLED"].includes(s)) return { error: "form.invalid" };
     await clients.setTaskStatus(u, h, String(f.get("taskId")), s as "OPEN");
+  });
+}
+
+// ── Phase 2: accounts details, balances, long-term savings ──────────────────
+
+export async function accountDetailsAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const v = accountDetailsSchema.safeParse(obj(f));
+    if (!v.success) return { error: "form.invalid" };
+    await updateAccountDetails(u, h, String(f.get("accountId")), v.data);
+  });
+}
+
+export async function recordBalanceAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const v = balanceSchema.safeParse(obj(f));
+    if (!v.success) return { error: "form.invalid" };
+    await recordBalance(u, h, String(f.get("accountId")), v.data);
+  });
+}
+
+export async function saveProductAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const v = savings.productSchema.safeParse(obj(f));
+    if (!v.success) return { error: "form.invalid" };
+    await savings.saveProduct(u, h, v.data, String(f.get("productId") ?? "") || undefined);
+  });
+}
+
+export async function deleteProductAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => savings.deleteProduct(u, h, String(f.get("productId"))));
+}
+
+export async function saveAssumptionsAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const v = savings.assumptionsSchema.safeParse(obj(f));
+    if (!v.success) return { error: "form.invalid" };
+    await savings.saveAssumptions(u, h, v.data);
+  });
+}
+
+export async function importProductsAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u): Promise<ActionState> => {
+    const file = f.get("file");
+    if (!(file instanceof File) || file.size === 0) return { error: "upload.errors.EMPTY" };
+    const r = await savings.importProductReport(u, h, file);
+    if (r.issues.length) return { error: "savings.importIssues", values: { rows: r.issues.map((i) => `${i.row}:${i.field}`).slice(0, 10).join(", ") } };
+    revalidatePath(`/advisor/clients/${h}`, "layout");
+    return { ok: true, message: "savings.imported", values: { count: r.created } };
   });
 }

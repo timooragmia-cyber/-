@@ -128,21 +128,23 @@ model Household {
   updatedAt       DateTime        @updatedAt
   archivedAt      DateTime?
 
-  members             Person[]
-  users               User[]
-  incomeSources       IncomeSource[]
-  goals               Goal[]
-  consents            Consent[]
-  accounts            FinancialAccount[]
-  transactions        Transaction[]
-  importBatches       ImportBatch[]
-  uploadedFiles       UploadedFile[]
-  snapshots           MonthlySnapshot[]
-  notes               AdvisorNote[]
-  actionItems         ActionItem[]
-  budgets             Budget[]
-  categorizationRules CategorizationRule[]
-  importMappings      ImportMapping[]
+  members               Person[]
+  users                 User[]
+  incomeSources         IncomeSource[]
+  goals                 Goal[]
+  consents              Consent[]
+  accounts              FinancialAccount[]
+  transactions          Transaction[]
+  importBatches         ImportBatch[]
+  uploadedFiles         UploadedFile[]
+  snapshots             MonthlySnapshot[]
+  notes                 AdvisorNote[]
+  actionItems           ActionItem[]
+  budgets               Budget[]
+  categorizationRules   CategorizationRule[]
+  importMappings        ImportMapping[]
+  longTermProducts      LongTermProduct[]
+  retirementAssumptions RetirementAssumptions?
 
   @@map("households")
 }
@@ -179,9 +181,10 @@ model Person {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  user          User?
-  incomeSources IncomeSource[]
-  accounts      FinancialAccount[]
+  user             User?
+  incomeSources    IncomeSource[]
+  accounts         FinancialAccount[]
+  longTermProducts LongTermProduct[]
 
   @@index([householdId])
   @@map("persons")
@@ -298,23 +301,34 @@ enum Institution {
 }
 
 model FinancialAccount {
-  id            String      @id @default(cuid())
-  householdId   String
-  household     Household   @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  ownerPersonId String?
-  ownerPerson   Person?     @relation(fields: [ownerPersonId], references: [id], onDelete: SetNull)
-  kind          AccountKind
-  institution   Institution
-  nickname      String
+  id               String      @id @default(cuid())
+  householdId      String
+  household        Household   @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  ownerPersonId    String?
+  ownerPerson      Person?     @relation(fields: [ownerPersonId], references: [id], onDelete: SetNull)
+  kind             AccountKind
+  institution      Institution
+  nickname         String
   // Last 4 digits ONLY. Full account/card numbers are never stored.
-  last4         String?     @db.VarChar(4)
-  currency      String      @default("ILS") @db.Char(3)
-  isActive      Boolean     @default(true)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  last4            String?     @db.VarChar(4)
+  currency         String      @default("ILS") @db.Char(3)
+  isActive         Boolean     @default(true)
+  // Bank: approved overdraft line (agorot, positive) and its annual rate (ppm) as stated by the bank.
+  overdraftLimit   BigInt?
+  overdraftRatePpm Int?
+  // Bank: fixed monthly account fee (agorot) if the client has a fee plan ("מסלול").
+  monthlyFee       BigInt?
+  // Card: credit limit (agorot) and billing day of month (1–31).
+  creditLimit      BigInt?
+  billingDay       Int?
+  // Card: annual card fee (agorot).
+  annualCardFee    BigInt?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   transactions  Transaction[]
   importBatches ImportBatch[]
+  balances      BalanceSnapshot[]
 
   @@index([householdId])
   @@map("financial_accounts")
@@ -411,6 +425,97 @@ model ImportBatch {
 
   @@index([householdId])
   @@map("import_batches")
+}
+
+// Balance of an account on a date (manual entry or statement). Basis for net worth and
+// the cash-flow calendar starting point.
+model BalanceSnapshot {
+  id              String           @id @default(cuid())
+  accountId       String
+  account         FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  asOf            DateTime         @db.Date
+  balance         BigInt // agorot, signed (negative = overdraft / card debt)
+  source          String           @default("manual")
+  createdByUserId String
+  createdAt       DateTime         @default(now())
+
+  @@unique([accountId, asOf])
+  @@map("balance_snapshots")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Module C — Long-term savings (pension, provident, study funds, managers' insurance)
+// ─────────────────────────────────────────────────────────────
+
+enum ProductType {
+  PENSION_COMPREHENSIVE // קרן פנסיה מקיפה
+  PENSION_GENERAL // קרן פנסיה כללית
+  MANAGERS_INSURANCE // ביטוח מנהלים
+  PROVIDENT_FUND // קופת גמל
+  INVESTMENT_PROVIDENT_FUND // קופת גמל להשקעה
+  STUDY_FUND // קרן השתלמות
+}
+
+model LongTermProduct {
+  id                 String      @id @default(cuid())
+  householdId        String
+  household          Household   @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  personId           String?
+  person             Person?     @relation(fields: [personId], references: [id], onDelete: SetNull)
+  productType        ProductType
+  provider           String // managing company, free text (e.g. "מגדל")
+  track              String? // investment track (e.g. "מסלול לבני 50 ומטה")
+  policyLast4        String?     @db.VarChar(4)
+  balance            BigInt // agorot
+  balanceAsOf        DateTime    @db.Date
+  // Monthly deposits (agorot). total = employee + employer + severance (+ self-employed).
+  employeeDeposit    BigInt      @default(0)
+  employerDeposit    BigInt      @default(0)
+  severanceDeposit   BigInt      @default(0)
+  // Management fees actually charged (ppm): from deposits and annual from accumulation.
+  feeDepositsPpm     Int         @default(0)
+  feeAccumulationPpm Int         @default(0)
+  startDate          DateTime?   @db.Date
+  isActive           Boolean     @default(true) // false = no current deposits ("לא פעיל")
+  source             String      @default("manual") // "manual" | "template-xlsx" | later "clearinghouse-xml"
+  notes              String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  history ProductBalance[]
+
+  @@index([householdId])
+  @@map("long_term_products")
+}
+
+model ProductBalance {
+  id        String          @id @default(cuid())
+  productId String
+  product   LongTermProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  asOf      DateTime        @db.Date
+  balance   BigInt
+
+  @@unique([productId, asOf])
+  @@map("product_balances")
+}
+
+// Advisor-editable projection inputs per household (defaults come from AdvisoryParameter).
+model RetirementAssumptions {
+  id                    String    @id @default(cuid())
+  householdId           String    @unique
+  household             Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  retirementAge         Int
+  conservativeReturnPpm Int
+  baseReturnPpm         Int
+  optimisticReturnPpm   Int
+  // Annual real growth of deposits (salary growth), ppm.
+  depositGrowthPpm      Int       @default(0)
+  // Annuity conversion factor × 1000 (e.g. 200.000 → 200000). Fund-specific; advisor input.
+  annuityFactorMilli    Int
+  updatedByUserId       String
+  updatedAt             DateTime  @updatedAt
+
+  @@map("retirement_assumptions")
 }
 
 // ─────────────────────────────────────────────────────────────

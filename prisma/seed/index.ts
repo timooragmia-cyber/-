@@ -4,7 +4,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { hash } from "@node-rs/argon2";
 import { PrismaClient } from "../../src/generated/prisma/client";
 import { categories, merchantRules } from "./categories";
-import { advisoryParameters, CMA_SOURCE, feeBenchmarkKeys, taxRuleKeys } from "./config";
+import { advisoryParameters, CMA_SOURCE, feeBenchmarks, taxRuleKeys } from "./config";
 import { demoHouseholds } from "./demo";
 import { categorize, compileRules, learnedRuleFor } from "../../src/lib/categorize/engine";
 import { assignDedupKeys } from "../../src/lib/import/dedup";
@@ -15,6 +15,7 @@ const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.
 const ARGON = { memoryCost: 19456, timeCost: 2, parallelism: 1, outputLen: 32 } as const;
 const SEED_DATE = new Date("2026-01-01");
 const APPROVED_DEFAULTS = new Set(["emergency_fund.months", "monthly_close.grace_days", "dashboard.trend_flat_threshold_ppm"]);
+// retirement.defaults: return scenarios approved 2026-11-14, but age / annuity factor still need confirmation → left unconfirmed.
 const agorot = (shekels: number) => BigInt(shekels) * 100n;
 
 function password(envName: string): { value: string; generated: boolean } {
@@ -44,12 +45,13 @@ async function seedReference() {
       create: { ruleKey: r.ruleKey, effectiveFrom: SEED_DATE, status: "MISSING", parameters: undefined, sourceTitle: r.sourceTitle, notes: r.notes },
     });
   }
-  for (const f of feeBenchmarkKeys) {
-    await db.feeBenchmark.upsert({
-      where: { productType_feeBase_effectiveFrom: { productType: f.productType, feeBase: f.feeBase, effectiveFrom: SEED_DATE } },
-      update: {},
-      create: { ...f, effectiveFrom: SEED_DATE, status: "MISSING", sourceTitle: CMA_SOURCE },
-    });
+  for (const f of feeBenchmarks) {
+    const where = { productType_feeBase_effectiveFrom: { productType: f.productType, feeBase: f.feeBase, effectiveFrom: SEED_DATE } };
+    const data = { benchmarkPpm: f.benchmarkPpm, legalCeilingPpm: f.legalCeilingPpm, sourceUrl: f.sourceUrl, sourceTitle: CMA_SOURCE, notes: f.notes, status: f.status };
+    const existing = await db.feeBenchmark.findUnique({ where });
+    if (!existing) await db.feeBenchmark.create({ data: { productType: f.productType, feeBase: f.feeBase, effectiveFrom: SEED_DATE, ...data } });
+    // Fill placeholders only — never overwrite a row the advisor has edited or verified.
+    else if (existing.status === "MISSING" && existing.lastVerifiedAt === null) await db.feeBenchmark.update({ where, data });
   }
   for (const p of advisoryParameters) {
     await db.advisoryParameter.upsert({
@@ -152,6 +154,50 @@ async function seedDemo(advisorId: string) {
         }),
       });
     }
+    // Phase 2: account details, balances, long-term products
+    for (const [key, det] of Object.entries(d.accountDetails ?? {})) {
+      const acc = accountIds.get(key);
+      if (!acc) continue;
+      await db.financialAccount.update({
+        where: { id: acc.id },
+        data: {
+          overdraftLimit: det.overdraftLimit !== undefined ? agorot(det.overdraftLimit) : null,
+          overdraftRatePpm: det.overdraftRatePct !== undefined ? Math.round(det.overdraftRatePct * 10_000) : null,
+          monthlyFee: det.monthlyFee !== undefined ? BigInt(Math.round(det.monthlyFee * 100)) : null,
+          creditLimit: det.creditLimit !== undefined ? agorot(det.creditLimit) : null,
+          billingDay: det.billingDay ?? null,
+          annualCardFee: det.annualCardFee !== undefined ? agorot(det.annualCardFee) : null,
+        },
+      });
+    }
+    for (const b of d.balances ?? []) {
+      await db.balanceSnapshot.create({ data: { accountId: accountIds.get(b.account)!.id, asOf: new Date(`${b.asOf}T00:00:00Z`), balance: agorot(b.balance), createdByUserId: advisorId } });
+    }
+    for (const p of d.products ?? []) {
+      const person = h.members.find((m) => m.firstName === p.person);
+      const prod = await db.longTermProduct.create({
+        data: {
+          householdId: h.id,
+          personId: person?.id ?? null,
+          productType: p.type,
+          provider: p.provider,
+          track: p.track,
+          balance: agorot(p.balance),
+          balanceAsOf: new Date("2026-10-31T00:00:00Z"),
+          employeeDeposit: agorot(p.employee),
+          employerDeposit: agorot(p.employer),
+          severanceDeposit: agorot(p.severance),
+          feeDepositsPpm: Math.round(p.feeDepPct * 10_000),
+          feeAccumulationPpm: Math.round(p.feeAccPct * 10_000),
+          startDate: new Date(`${p.start}T00:00:00Z`),
+          isActive: p.active,
+        },
+      });
+      for (const [asOf, bal] of [...p.history, ["2026-10-31", p.balance] as [string, number]]) {
+        await db.productBalance.create({ data: { productId: prod.id, asOf: new Date(`${asOf}T00:00:00Z`), balance: agorot(bal) } });
+      }
+    }
+
     for (const b of d.budgets) {
       await db.budget.create({ data: { householdId: h.id, categoryId: catByKey.get(b.category)!.id, monthlyAmount: agorot(b.amount), effectiveFrom: "2026-05" } });
     }

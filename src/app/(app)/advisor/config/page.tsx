@@ -6,7 +6,9 @@ import { requireAdvisor } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { ActionForm } from "@/components/app/action-form";
 import { Textarea } from "@/components/ui/select";
-import { confirmParamAction, updateParamAction } from "./actions";
+import { confirmParamAction, updateFeeAction, updateParamAction } from "./actions";
+import { Input } from "@/components/ui/input";
+import { formatPpmPercent } from "@/lib/money";
 
 const ymd = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "—");
 
@@ -15,7 +17,7 @@ export default async function ConfigPage() {
   const t = await getTranslations();
   const [rules, fees, params] = await Promise.all([
     db.taxRule.findMany({ orderBy: [{ ruleKey: "asc" }, { effectiveFrom: "desc" }] }),
-    db.feeBenchmark.findMany({ orderBy: [{ productType: "asc" }, { feeBase: "asc" }] }),
+    db.feeBenchmark.findMany({ where: { effectiveTo: null }, orderBy: [{ productType: "asc" }, { feeBase: "asc" }] }),
     db.advisoryParameter.findMany({ where: { effectiveTo: null }, orderBy: { key: "asc" } }),
   ]);
   const unverified = rules.filter((r) => r.status !== "VERIFIED").length + fees.filter((f) => f.status !== "VERIFIED").length;
@@ -57,32 +59,36 @@ export default async function ConfigPage() {
         </Table>
       </Card>
 
-      <Card className="p-0 sm:p-0">
-        <CardTitle className="px-4 pt-4">{t("config.feeBenchmarks")}</CardTitle>
-        <Table>
-          <thead>
-            <tr>
-              <Th>{t("config.ruleKey")}</Th>
-              <Th>{t("config.effectiveFrom")}</Th>
-              <Th>{t("config.source")}</Th>
-              <Th>{t("config.verification")}</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {fees.map((f) => (
-              <tr key={f.id}>
-                <Td className="num font-mono text-xs">
-                  {f.productType} / {f.feeBase}
-                </Td>
-                <Td className="num">{ymd(f.effectiveFrom)}</Td>
-                <Td className="text-xs">{f.sourceTitle ?? "—"}</Td>
-                <Td>
+      <Card>
+        <CardTitle>{t("config.feeBenchmarks")}</CardTitle>
+        <ul className="space-y-3">
+          {fees.map((f) => (
+            <li key={f.id} className="rounded-md border border-border p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm font-medium">{t(`productType.${f.productType}`)} · {f.feeBase === "DEPOSITS" ? t("sim.fromDeposit") : t("sim.fromBalance")}</span>
+                <span className="flex items-center gap-2">
+                  <span className="num text-xs text-muted">{t("savings.benchmark")} {f.benchmarkPpm !== null ? formatPpmPercent(f.benchmarkPpm, "he", 3) : "—"} · {t("savings.ceiling")} {f.legalCeilingPpm !== null ? formatPpmPercent(f.legalCeilingPpm, "he", 3) : "—"}</span>
                   <Badge tone={tone(f.status)}>{t(`enums.VerificationStatus.${f.status}`)}</Badge>
-                </Td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
+                </span>
+              </div>
+              {f.notes && <p className="mt-1 text-xs text-muted">{f.notes}</p>}
+              {f.lastVerifiedAt && <p className="text-xs text-ok">{t("feeEdit.verifiedBy", { date: ymd(f.lastVerifiedAt) })}</p>}
+              <details className="mt-2">
+                <summary className="cursor-pointer text-sm text-brand">{t("feeEdit.title")}</summary>
+                <ActionForm action={updateFeeAction} submitLabel={t("feeEdit.save")} resetOnSuccess={false} className="mt-2">
+                  <input type="hidden" name="id" value={f.id} />
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <label className="text-xs">{t("feeEdit.benchmark")}<Input name="benchmark" dir="ltr" inputMode="decimal" defaultValue={f.benchmarkPpm !== null ? f.benchmarkPpm / 10_000 : ""} /></label>
+                    <label className="text-xs">{t("feeEdit.ceiling")}<Input name="ceiling" dir="ltr" inputMode="decimal" defaultValue={f.legalCeilingPpm !== null ? f.legalCeilingPpm / 10_000 : ""} /></label>
+                    <label className="text-xs">{t("feeEdit.source")}<Input name="sourceUrl" dir="ltr" defaultValue={f.sourceUrl ?? ""} /></label>
+                  </div>
+                  <label className="block text-xs">{t("feeEdit.notes")}<Textarea name="notes" rows={2} defaultValue={f.notes ?? ""} /></label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="verify" /> {t("feeEdit.verify")}</label>
+                </ActionForm>
+              </details>
+            </li>
+          ))}
+        </ul>
       </Card>
 
       <Card>

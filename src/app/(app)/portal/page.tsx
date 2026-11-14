@@ -12,6 +12,7 @@ import { getHouseholdProfile } from "@/server/households";
 import { householdInsights, loadCategories } from "@/server/months";
 import { catName, type Loc } from "@/server/view";
 import { clientTaskStatusAction } from "./actions";
+import { db } from "@/server/db";
 
 /**
  * Client home. Goal: understand the month in 10 seconds — one headline number, one status,
@@ -25,6 +26,8 @@ export default async function PortalPage() {
   const t = await getTranslations();
   const locale = (await getLocale()) as Loc;
   const latest = insights.closed[0];
+  // Balances only — fee analysis and projections stay advisor-side until approved (Phase 4 plan).
+  const products = await db.longTermProduct.findMany({ where: { householdId: user.householdId }, include: { person: { select: { firstName: true } } }, orderBy: { balance: "desc" } });
   const names = new Map([...cats.values()].map((c) => [c.key, catName(c, locale)]));
   const byKey = new Map([...cats.values()].map((c) => [c.key, c]));
 
@@ -85,6 +88,21 @@ export default async function PortalPage() {
             overLabel={t("month.overBudget")}
             items={latest.result.expenses.slice(0, 8).map((l) => ({ label: catName(byKey.get(l.key), locale, l.key), amount: toDisplayNumber(l.amount), budget: l.budget === null ? null : toDisplayNumber(l.budget) }))}
           />
+        </Card>
+      )}
+
+      {products.length > 0 && (
+        <Card>
+          <CardTitle>{t("portalSavings.title")}</CardTitle>
+          <p className="num text-2xl font-bold">{formatMoney(products.reduce((s, p) => s + p.balance, 0n), locale, { decimals: 0 })}</p>
+          <ul className="mt-2 space-y-1 text-sm">
+            {products.map((p) => (
+              <li key={p.id} className="flex justify-between gap-2">
+                <span>{t(`productType.${p.productType}`)} — {p.provider}{p.person ? ` (${p.person.firstName})` : ""}</span>
+                <span className="num">{formatMoney(p.balance, locale, { decimals: 0 })}</span>
+              </li>
+            ))}
+          </ul>
         </Card>
       )}
 

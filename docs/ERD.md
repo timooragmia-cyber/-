@@ -60,7 +60,7 @@ erDiagram
 
 **Phase 1** — no new tables. It uses Transaction, ImportBatch, ImportMapping, CategorizationRule (learned rules), Budget, MonthlySnapshot.payload (category breakdown, budget vs actual, calc version), AdvisorNote and ActionItem. It adds `RecurringCharge` (detected subscriptions and installment plans).
 
-**Phase 2 — Module C**
+**Phase 2 — Module C (implemented)**: `FinancialAccount` details, `BalanceSnapshot`, `LongTermProduct`, `ProductBalance`, `RetirementAssumptions`. Original design notes:
 - `FinancialAccount` + overdraft limit, overdraft interest paid, monthly fees (bank). For cards: billing day, credit plan.
 - `BalanceSnapshot` (account, date, balance agorot) for net worth.
 - `LongTermProduct` (pension / provident / study fund / managers' insurance / insurance): provider, type, track, balance, monthly deposit, `feeDepositsPpm`, `feeAccumulationPpm`, start date, employer/employee split.

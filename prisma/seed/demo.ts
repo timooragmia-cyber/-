@@ -26,6 +26,24 @@ export type DemoHousehold = {
   /** One-off manual categorizations by the advisor. */
   manual: { descriptionContains: string; category: string }[];
   budgets: { category: string; amount: number }[];
+  /** Phase 2: account details, balance history, long-term products (fictional). */
+  accountDetails?: Record<string, { overdraftLimit?: number; overdraftRatePct?: number; monthlyFee?: number; creditLimit?: number; billingDay?: number; annualCardFee?: number }>;
+  balances?: { account: string; asOf: string; balance: number }[];
+  products?: {
+    person: string; // first name
+    type: "PENSION_COMPREHENSIVE" | "MANAGERS_INSURANCE" | "PROVIDENT_FUND" | "INVESTMENT_PROVIDENT_FUND" | "STUDY_FUND";
+    provider: string;
+    track: string;
+    balance: number;
+    history: [string, number][]; // asOf, balance (older values for net worth)
+    employee: number;
+    employer: number;
+    severance: number;
+    feeDepPct: number;
+    feeAccPct: number;
+    start: string;
+    active: boolean;
+  }[];
   notes: string[];
   tasks: string[];
 };
@@ -58,6 +76,20 @@ export const demoHouseholds: DemoHousehold[] = [
       { key: "bank", kind: "BANK_ACCOUNT", institution: "LEUMI", nickname: "לאומי עו\"ש", last4: "4821" },
       { key: "max", kind: "CREDIT_CARD", institution: "MAX", nickname: "מקס — סאמר", last4: "1190" },
     ],
+    accountDetails: { bank: { overdraftLimit: 15000, overdraftRatePct: 11.5, monthlyFee: 29.9 }, max: { creditLimit: 18000, billingDay: 10, annualCardFee: 0 } },
+    balances: [
+      { account: "bank", asOf: "2026-06-30", balance: -9800 },
+      { account: "bank", asOf: "2026-07-31", balance: -7200 },
+      { account: "bank", asOf: "2026-08-31", balance: -3100 },
+      { account: "bank", asOf: "2026-09-30", balance: 1900 },
+      { account: "bank", asOf: "2026-10-31", balance: 6400 },
+      { account: "bank", asOf: "2026-11-12", balance: 2300 },
+    ],
+    products: [
+      { person: "سامر", type: "PENSION_COMPREHENSIVE", provider: "הראל פנסיה", track: "מסלול לבני 50 ומטה", balance: 64000, history: [["2026-06-30", 61200]], employee: 600, employer: 0, severance: 0, feeDepPct: 4, feeAccPct: 0.4, start: "2015-01-01", active: true },
+      { person: "رنا", type: "PENSION_COMPREHENSIVE", provider: "מגדל מקפת", track: "מסלול לבני 50 ומטה", balance: 210000, history: [["2026-06-30", 203500]], employee: 590, employer: 640, severance: 500, feeDepPct: 2.49, feeAccPct: 0.27, start: "2011-09-01", active: true },
+      { person: "رنا", type: "STUDY_FUND", provider: "אלטשולר שחם השתלמות", track: "כללי", balance: 78000, history: [["2026-06-30", 74900]], employee: 245, employer: 735, severance: 0, feeDepPct: 0, feeAccPct: 0.7, start: "2014-09-01", active: true },
+    ],
     lines: khatib,
     closePeriods: ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"],
     learned: [{ description: "העברה - לקוח עבודות חשמל", category: "income_business" }],
@@ -89,6 +121,17 @@ export const demoHouseholds: DemoHousehold[] = [
       { key: "bank", kind: "BANK_ACCOUNT", institution: "DISCOUNT", nickname: "דיסקונט משותף", last4: "3307" },
       { key: "isracard", kind: "CREDIT_CARD", institution: "ISRACARD", nickname: "ישראכרט משפחתי", last4: "7752" },
     ],
+    accountDetails: { bank: { overdraftLimit: 20000, overdraftRatePct: 9.9 }, isracard: { creditLimit: 30000, billingDay: 2, annualCardFee: 0 } },
+    balances: [
+      { account: "bank", asOf: "2026-08-31", balance: 18500 },
+      { account: "bank", asOf: "2026-09-30", balance: 21900 },
+      { account: "bank", asOf: "2026-10-31", balance: 24100 },
+    ],
+    products: [
+      { person: "סמאח", type: "PENSION_COMPREHENSIVE", provider: "מור פנסיה", track: "מסלול לבני 50 ומטה", balance: 340000, history: [["2026-06-30", 331000]], employee: 840, employer: 910, severance: 960, feeDepPct: 1, feeAccPct: 0.15, start: "2008-05-01", active: true },
+      { person: "ואיל", type: "STUDY_FUND", provider: "מיטב השתלמות", track: "מניות", balance: 145000, history: [["2026-06-30", 139800]], employee: 610, employer: 1830, severance: 0, feeDepPct: 0, feeAccPct: 0.5, start: "2010-02-01", active: true },
+      { person: "ואיל", type: "INVESTMENT_PROVIDENT_FUND", provider: "הפניקס גמל להשקעה", track: "מסלול S&P 500", balance: 62000, history: [["2026-06-30", 52500]], employee: 3000, employer: 0, severance: 0, feeDepPct: 0, feeAccPct: 0.62, start: "2023-01-01", active: true },
+    ],
     lines: halabi,
     closePeriods: ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"],
     learned: [],
@@ -111,6 +154,15 @@ export const demoHouseholds: DemoHousehold[] = [
     goals: [],
     consent: true,
     accounts: [{ key: "bank", kind: "BANK_ACCOUNT", institution: "HAPOALIM", nickname: "הפועלים עו\"ש", last4: "6604" }],
+    accountDetails: { bank: { overdraftLimit: 12000, overdraftRatePct: 12.9, monthlyFee: 34.9 } },
+    balances: [
+      { account: "bank", asOf: "2026-06-30", balance: -6400 },
+      { account: "bank", asOf: "2026-07-31", balance: -8900 },
+      { account: "bank", asOf: "2026-08-31", balance: -11800 },
+    ],
+    products: [
+      { person: "محمد", type: "PENSION_COMPREHENSIVE", provider: "כלל פנסיה", track: "מסלול לבני 50 ומטה", balance: 48000, history: [["2026-06-30", 46500]], employee: 850, employer: 920, severance: 1170, feeDepPct: 6, feeAccPct: 0.5, start: "2016-03-01", active: true },
+    ],
     lines: osman,
     closePeriods: ["2026-06", "2026-07", "2026-08"],
     learned: [{ description: "העברה - עבודה פרטית", category: "income_business" }],

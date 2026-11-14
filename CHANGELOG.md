@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.3.0] — Phase 2: Accounts, cards, long-term savings, fee simulator (2026-11-14)
+
+### Added
+- **Bank accounts**: balance history, overdraft limit and rate, monthly fee; interest vs fees paid per month (from categorized lines); overdraft usage.
+- **Credit cards**: per billing cycle — total, category and merchant breakdown, installments, credit-plan charges, fees/interest, credit-limit usage ("what comes out of each card and on what").
+- **Cash-flow calendar**: recurring bank in/outflows by day of month (last N months), variable spending spread evenly, day-by-day projected balance with first negative / beyond-overdraft day and lowest point.
+- **Net worth** month by month (accounts + long-term savings; loans join in Phase 4). Emergency-fund months now feed the health score.
+- **Long-term savings**: pension, managers' insurance, provident, investment provident and study funds — provider, track, balance + history, employee/employer/severance deposits, fees from deposits and accumulation.
+- **Fee flags** vs configurable, dated benchmark and legal-ceiling tables; **savings potential** per product and household (gain at retirement, fees saved, per year).
+- **Fee-savings simulator** (interactive, exact integer engine, same code on server and client) with a documented method and an independent decimal oracle (`docs/calculations/fee-simulator.md`).
+- **Retirement projection**: conservative / base / optimistic real returns, deposit growth, annuity factor — advisor-editable per household, defaults in configuration.
+- **Product import**: our Excel template (download, fill, import; all-or-nothing with per-field errors) through a pluggable parser registry ready for the pension-clearinghouse file.
+- **Configuration**: the advisor edits fee benchmarks / ceilings and marks them verified (source URL required); verified rows are versioned, never edited in place.
+- Client portal: own savings balances (fee analysis stays advisor-side).
+- Tests: 149 unit tests (+ simulator oracle, fee flags, retirement, cash flow, cards, net worth, template parser) and Phase 2 E2E.
+
+### Researched (unverified, sources recorded per row)
+- Pension ceilings 6% / 0.5%; provident & managers' insurance 4% / 1.05%; default-fund terms 1% / 0.22%; 2024 industry average 1.57% / 0.15%. Study-fund ceiling left empty (conflicting sources).
+
+### Fixed during build
+- Forms lost the user's input after a validation error (React 19 resets forms after every action). `ActionForm` now keeps inputs on error and resets only on success.
+
 ## [0.2.0] — Phase 1: Clients, import, categorization, monthly close (2026-11-14)
 
 ### Added
