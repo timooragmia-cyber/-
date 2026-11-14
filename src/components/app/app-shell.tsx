@@ -9,6 +9,7 @@ export async function AppShell({ user, children }: { user: CurrentUser; children
     user.role === "ADVISOR"
       ? [
           { href: "/advisor", label: t("nav.dashboard") },
+          { href: "/advisor/tax", label: t("nav.tax") },
           { href: "/advisor/config", label: t("nav.config") },
           { href: "/account", label: t("nav.account") },
         ]

@@ -145,6 +145,7 @@ model Household {
   importMappings        ImportMapping[]
   longTermProducts      LongTermProduct[]
   retirementAssumptions RetirementAssumptions?
+  calculationRuns       CalculationRun[]
 
   @@map("households")
 }
@@ -827,4 +828,42 @@ model AuditLog {
   @@index([householdId, at])
   @@index([actorUserId, at])
   @@map("audit_log")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Module D — Tax engine support (Phase 3a)
+// ─────────────────────────────────────────────────────────────
+
+// Consumer price index (CBS). Values ×1000 on an explicit base; ratios only within one base.
+model CpiValue {
+  id              String   @id @default(cuid())
+  period          String   @unique // "YYYY-MM"
+  valueMilli      Int
+  base            String
+  source          String // "cbs-import" | "manual"
+  updatedByUserId String
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+
+  @@map("cpi_values")
+}
+
+// Saved calculation (inputs, rule versions used, steps and result) — full traceability.
+model CalculationRun {
+  id              String     @id @default(cuid())
+  householdId     String?
+  household       Household? @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  calculator      String
+  version         String
+  title           String?
+  inputs          Json
+  rulesUsed       Json
+  steps           Json
+  result          Json
+  warnings        Json
+  createdByUserId String
+  createdAt       DateTime   @default(now())
+
+  @@index([householdId, createdAt])
+  @@map("calculation_runs")
 }

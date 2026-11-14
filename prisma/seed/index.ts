@@ -4,7 +4,8 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { hash } from "@node-rs/argon2";
 import { PrismaClient } from "../../src/generated/prisma/client";
 import { categories, merchantRules } from "./categories";
-import { advisoryParameters, CMA_SOURCE, feeBenchmarks, taxRuleKeys } from "./config";
+import { advisoryParameters, CMA_SOURCE, feeBenchmarks } from "./config";
+import { taxRules } from "./tax-rules";
 import { demoHouseholds } from "./demo";
 import { categorize, compileRules, learnedRuleFor } from "../../src/lib/categorize/engine";
 import { assignDedupKeys } from "../../src/lib/import/dedup";
@@ -38,13 +39,27 @@ async function seedReference() {
     data: merchantRules.map((r) => ({ match: "CONTAINS" as const, pattern: r.pattern, categoryId: byKey.get(r.category)!, origin: "SYSTEM" as const })),
   });
 
-  for (const r of taxRuleKeys) {
-    await db.taxRule.upsert({
-      where: { ruleKey_jurisdiction_effectiveFrom: { ruleKey: r.ruleKey, jurisdiction: "IL", effectiveFrom: SEED_DATE } },
-      update: {},
-      create: { ruleKey: r.ruleKey, effectiveFrom: SEED_DATE, status: "MISSING", parameters: undefined, sourceTitle: r.sourceTitle, notes: r.notes },
+  // Tax rules: researched values replace untouched placeholders; advisor-edited rows are kept.
+  for (const r of taxRules) {
+    const existing = await db.taxRule.findMany({ where: { ruleKey: r.ruleKey, jurisdiction: "IL" } });
+    const untouched = existing.every((e) => e.status === "MISSING" && e.lastVerifiedAt === null);
+    if (existing.length > 0 && !untouched) continue;
+    await db.taxRule.deleteMany({ where: { ruleKey: r.ruleKey, jurisdiction: "IL" } });
+    await db.taxRule.create({
+      data: {
+        ruleKey: r.ruleKey,
+        effectiveFrom: new Date(`${r.effectiveFrom}T00:00:00Z`),
+        effectiveTo: r.effectiveTo ? new Date(`${r.effectiveTo}T00:00:00Z`) : null,
+        parameters: (r.params ?? undefined) as object | undefined,
+        status: r.params === null ? "MISSING" : "UNVERIFIED",
+        sourceUrl: r.sourceUrl,
+        sourceTitle: r.sourceTitle,
+        notes: r.notes,
+      },
     });
   }
+  // Superseded placeholder: CPI lives in its own table (cpi_values), not in tax_rules.
+  await db.taxRule.deleteMany({ where: { ruleKey: { notIn: taxRules.map((r) => r.ruleKey) }, status: "MISSING", lastVerifiedAt: null } });
   for (const f of feeBenchmarks) {
     const where = { productType_feeBase_effectiveFrom: { productType: f.productType, feeBase: f.feeBase, effectiveFrom: SEED_DATE } };
     const data = { benchmarkPpm: f.benchmarkPpm, legalCeilingPpm: f.legalCeilingPpm, sourceUrl: f.sourceUrl, sourceTitle: CMA_SOURCE, notes: f.notes, status: f.status };

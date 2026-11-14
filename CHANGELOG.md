@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.0] — Phase 3a: Tax engine and calculators (2026-11-14)
+
+### Added
+- **Tax rules engine**: per-rule parameter schemas, rule selection by transaction date, refusal on MISSING / expired / malformed rules (no fallback numbers anywhere).
+- **Calculators** (each shows inputs, rule versions with status and source, step-by-step breakdown, result, warnings and a "verify current rates" note):
+  purchase tax (single / additional / new immigrant / disabled), betterment tax (regular linear, linear-beneficial, single-residence exemption incl. above-ceiling share, pre-2001 period with advisor rate, inheritance/gift flags),
+  capital gains (CPI / FX / nominal, substantial shareholder, loss offset and carry-forward, dividends, interest, surtax), money-market fund vs deposit, rental income routes (exempt / 10% / regular, cheapest highlighted), qualifying-pension tax, study-fund liquidity and tax.
+- **CPI table** with import from a CBS file (Hebrew month names, several period formats, single-base guard) and manual entry.
+- **Saved calculations** per client (inputs, rules used, steps, result) with one-click reopen.
+- **Tax-rule editing** on the configuration screen: JSON parameters validated against the rule schema; verification requires a source URL; verified rules are versioned.
+- 16 tax rules researched from public sources and seeded UNVERIFIED with source and notes; 2 left MISSING on purpose (disabled-buyer purchase tax, pension-deposit credit).
+- Documented hand-calculated examples (`docs/calculations/tax-examples.md`), each reproduced by a unit test and by an independent exact-fraction oracle. 199 unit tests; Phase 3a E2E.
+
+### Fixed during build
+- Translation keys containing dots and heading/group key collisions in the tax messages; a new test now checks that every literal translation key used in the UI resolves to a string.
+
 ## [0.3.0] — Phase 2: Accounts, cards, long-term savings, fee simulator (2026-11-14)
 
 ### Added

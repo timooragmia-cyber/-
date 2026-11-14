@@ -1,10 +1,10 @@
 # Unverified items (must be checked before relying on them)
 
-Updated: Phase 2.
+Updated: Phase 3a.
 
 | # | Item | Where | Status | Owner / when |
 |---|---|---|---|---|
-| 1 | All tax rates, brackets, thresholds (purchase tax, betterment tax, capital gains, surtax, money-market tax, rental routes, income-tax brackets, provident/pension exemptions, CPI series) | `tax_rules` | **MISSING** placeholders. No values are seeded. Calculators will refuse to run. | Researched against Israel Tax Authority / CBS sources and entered with `sourceUrl` in Phase 3 |
+| 1 | Tax rates, brackets, thresholds | `tax_rules` | **Seeded UNVERIFIED** (14 rules) from secondary public sources, source URL + notes per row. Known conflicts flagged in notes: betterment 2001–2011 rate (20% vs 25%), money-market tax basis, qualifying-pension exemption (57% vs 57.5%), additional-apartment provision end date (set to 31.12.2026 so the calculator refuses after it). **MISSING on purpose**: disabled-buyer purchase tax, pension-deposit credit. Not supported: pre-1994 inflationary amount, Reg. 12 (old immigrant track) | Advisor verifies each rule on the configuration screen (source URL required) |
 | 2 | Management fee legal ceilings and market benchmarks per product | `fee_benchmarks` | **Seeded UNVERIFIED from secondary public sources** (URL + notes per row): pension 6%/0.5%, provident & managers' insurance 4%/1.05%, benchmarks from the 2024 default-fund tender and 2024 industry average. Study-fund ceiling and general-pension rows **empty** (conflicting / not researched). Investment provident fund ceiling assumed equal to provident fund | Advisor verifies each row on the configuration screen (source URL required) |
 | 3 | Advisory defaults | `advisory_parameters` | Emergency fund 3–6 months, grace days 10 and trend threshold 1% **confirmed by the advisor (2026-11-14)**. Health-score weights/targets, recurring-detection and highlight thresholds: **awaiting confirmation** on the configuration screen | Advisor |
 | 4 | "Expensive debt" interest threshold | `advisory_parameters` | Empty, advisor to set | Advisor |
@@ -19,3 +19,6 @@ Updated: Phase 2.
 | 13 | Pension clearinghouse report ("מסלקה פנסיונית") | Product import | Parser **not built** — needs a real anonymized file. Our Excel template is the interim import path; the parser registry is ready | Advisor to supply a sample |
 | 14 | Card fee / credit-plan detection | Cards view | Keyword-based (עמלה, ריבית, דמי כרטיס, קרדיט, פריסה…). May miss issuer-specific wording | Refine with real statements |
 | 15 | Cash-flow calendar | Cash flow | Recurring item = same merchant in ≥ 2 of the last 3 months, median day and amount; irregular income is summed per month on its first day | Advisor to review on real clients |
+| 16 | CPI series | `cpi_values` | **Empty** — the CBS host is blocked from the build environment, and values are never typed from memory. Import the CBS file on the CPI screen (single base enforced) | Advisor imports once, then monthly |
+| 17 | Known-index convention | Betterment / capital gains | Index known on a date = last month's from the 15th, else two months back. Advisor can override both indices per calculation | Advisor to confirm |
+| 18 | Calculator scope | Tax calculators | Betterment: residential apartment held by an individual only; capital gains on foreign securities use a simplified FX linkage; rental marginal tax assumes credit points are used by other income; study fund early withdrawal not computed | Out-of-scope cases are flagged on screen |

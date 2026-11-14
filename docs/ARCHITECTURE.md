@@ -1,6 +1,6 @@
 # Architecture — T.A Mortgages Financial Platform
 
-Status: **Phase 2** (accounts, cards, cash flow, long-term savings). This document is the contract for every later phase.
+Status: **Phase 3a** (tax engine and calculators). This document is the contract for every later phase.
 
 ## 1. Product shape
 
@@ -108,6 +108,13 @@ The adapter interface (`ImportAdapter` in `src/lib/import/types.ts`) is `canHand
 - Savings potential = extra balance at retirement if fees drop to the benchmark, base scenario, today's shekels.
 - Product reports enter through `ProductReportParser` (`src/server/savings/report-parsers.ts`); the clearinghouse XML parser plugs in there.
 - The client portal shows balances only; fee analysis and projections stay advisor-side until the action-plan approval flow (Phase 4).
+
+## 6c. Tax engine (Phase 3a)
+
+- `src/lib/tax/rules.ts`: a zod schema per rule key; `resolveRule(rows, key, transactionDate)` returns the parameters and the exact row used, or throws `RuleUnavailableError` (NOT_FOUND / MISSING / INVALID). There is no default value anywhere.
+- Calculators are pure functions returning `{ rulesUsed, steps, result, warnings, version }`; the UI renders all of it, and a saved run stores all of it (`calculation_runs`).
+- CPI lives in `cpi_values` (×1000, one base enforced); `knownIndexPeriod` implements the known-index convention.
+- Calculator pages are GET forms (shareable URLs); saving to a client file re-computes on the server.
 
 ## 7. Deployment (summary; the full guide comes in Phase 5)
 

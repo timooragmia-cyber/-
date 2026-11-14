@@ -8,26 +8,7 @@
  * that the advisor must confirm on the configuration screen.
  */
 
-const TAX_AUTHORITY = "רשות המסים בישראל — לאימות מול האתר הרשמי (gov.il)";
 const CMA = "רשות שוק ההון, ביטוח וחיסכון — לאימות מול חוזר/תקנות עדכניים";
-
-export const taxRuleKeys: { ruleKey: string; sourceTitle: string; notes: string }[] = [
-  { ruleKey: "purchase_tax.single_residence", sourceTitle: TAX_AUTHORITY, notes: "מדרגות מס רכישה — דירה יחידה" },
-  { ruleKey: "purchase_tax.additional_residence", sourceTitle: TAX_AUTHORITY, notes: "מדרגות מס רכישה — דירה נוספת" },
-  { ruleKey: "purchase_tax.special_status", sourceTitle: TAX_AUTHORITY, notes: "עולה חדש, נכה ומעמדות מיוחדים לפי הדין" },
-  { ruleKey: "betterment_tax.rates", sourceTitle: TAX_AUTHORITY, notes: "מס שבח — שיעורים, חישוב לינארי" },
-  { ruleKey: "betterment_tax.single_residence_exemption", sourceTitle: TAX_AUTHORITY, notes: "פטור דירת מגורים מזכה — תנאים ותקרה" },
-  { ruleKey: "capital_gains.securities", sourceTitle: TAX_AUTHORITY, notes: "רווח הון בניירות ערך — שיעור רגיל ובעל מניות מהותי" },
-  { ruleKey: "capital_gains.dividend_interest", sourceTitle: TAX_AUTHORITY, notes: "מס על דיבידנד וריבית" },
-  { ruleKey: "surtax.high_income", sourceTitle: TAX_AUTHORITY, notes: "מס יסף — סף ושיעורים (כולל רכיב הכנסה הונית)" },
-  { ruleKey: "money_market_fund.tax", sourceTitle: TAX_AUTHORITY, notes: "מיסוי רווח בקרן כספית" },
-  { ruleKey: "rental_income.exempt_ceiling", sourceTitle: TAX_AUTHORITY, notes: "תקרת פטור הכנסה משכירות למגורים" },
-  { ruleKey: "rental_income.flat_rate", sourceTitle: TAX_AUTHORITY, notes: "מסלול מס מופחת על שכירות למגורים" },
-  { ruleKey: "income_tax.brackets", sourceTitle: TAX_AUTHORITY, notes: "מדרגות מס הכנסה ונקודות זיכוי" },
-  { ruleKey: "provident.withdrawal_rules", sourceTitle: TAX_AUTHORITY, notes: "תנאי משיכה פטורה — קופות גמל וקרנות השתלמות" },
-  { ruleKey: "pension.income_exemption", sourceTitle: TAX_AUTHORITY, notes: "פטור על קצבה מזכה" },
-  { ruleKey: "cpi.series", sourceTitle: "הלשכה המרכזית לסטטיסטיקה — מדד המחירים לצרכן", notes: "סדרת מדד לחישובי סכום אינפלציוני" },
-];
 
 /**
  * Fee benchmarks and legal ceilings — researched 2026-11-14 from PUBLIC SECONDARY sources

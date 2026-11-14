@@ -2,7 +2,7 @@
 
 Advisor workspace + client portal for household finances: monthly close, improvement tracking, fee reduction, and a prioritized savings & investment plan. Hebrew and Arabic, full RTL.
 
-> **Status: Phase 2 complete (accounts, cards, cash flow, long-term savings, fee simulator, retirement projection)** — see `CHANGELOG.md`. All figures in the UI are labeled *analysis for advisor review*. Tax and fee tables are intentionally empty until they are verified (`docs/UNVERIFIED.md`).
+> **Status: Phase 3a complete (tax rules engine + 6 tax calculators, CPI, saved calculations)** — 3b (investment modules) next — see `CHANGELOG.md`. All figures in the UI are labeled *analysis for advisor review*. Tax and fee tables are intentionally empty until they are verified (`docs/UNVERIFIED.md`).
 
 ## Quick start (local)
 
@@ -59,4 +59,5 @@ Two fictional statement files live in `tests/fixtures/` (a bank CSV with title r
 - `docs/ERD.md` — data model and planned entities per phase
 - `docs/UNVERIFIED.md` — what is not verified yet and who owns it
 - `docs/calculations/fee-simulator.md` — simulator method and reference examples
+- `docs/calculations/tax-examples.md` — tax calculators: method and documented examples
 - `docs/screenshots/` — screens per phase (`p1-*`, `p2-*`)

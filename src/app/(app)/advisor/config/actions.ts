@@ -5,6 +5,7 @@ import type { ActionState } from "@/lib/action-state";
 import { requireAdvisor } from "@/server/auth/dal";
 import { confirmAdvisoryParameter, updateAdvisoryParameter } from "@/server/config/advisory-admin";
 import { updateFeeBenchmark } from "@/server/config/fee-admin";
+import { updateTaxRule } from "@/server/tax/service";
 
 export async function updateParamAction(_p: ActionState, f: FormData): Promise<ActionState> {
   const user = await requireAdvisor();
@@ -31,6 +32,19 @@ export async function updateFeeAction(_p: ActionState, f: FormData): Promise<Act
     verify: f.get("verify") === "on",
   });
   if (!r.ok) return { error: `feeEdit.errors.${r.error}` };
+  revalidatePath("/advisor/config");
+  return { ok: true, message: "form.saved" };
+}
+
+export async function updateTaxRuleAction(_p: ActionState, f: FormData): Promise<ActionState> {
+  const user = await requireAdvisor();
+  const r = await updateTaxRule(user, String(f.get("id")), {
+    paramsJson: String(f.get("params") ?? ""),
+    sourceUrl: String(f.get("sourceUrl") ?? "").trim(),
+    notes: String(f.get("notes") ?? "").trim(),
+    verify: f.get("verify") === "on",
+  });
+  if (!r.ok) return { error: r.error.startsWith("schema:") ? r.error : `tax.ruleEdit.errors.${r.error}` };
   revalidatePath("/advisor/config");
   return { ok: true, message: "form.saved" };
 }

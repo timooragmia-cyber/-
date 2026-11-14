@@ -13,7 +13,8 @@
     "portal": "המצב שלי",
     "skipToContent": "דילוג לתוכן",
     "newClient": "לקוח חדש",
-    "upload": "העלאת דפי חשבון"
+    "upload": "העלאת דפי חשבון",
+    "tax": "מחשבוני מס"
   },
   "auth": {
     "loginTitle": "כניסה למערכת",
@@ -158,7 +159,8 @@
     "tasks": "הערות ומשימות",
     "cards": "כרטיסי אשראי",
     "cashflow": "תזרים",
-    "savings": "חיסכון ארוך טווח"
+    "savings": "חיסכון ארוך טווח",
+    "calculations": "חישובים שמורים"
   },
   "form": {
     "save": "שמירה",
@@ -649,5 +651,269 @@
     "title": "הפנסיה והחיסכון שלי",
     "total": "סך החיסכון",
     "asOf": "נכון ל-{date}"
+  },
+  "tax": {
+    "title": "מחשבוני מס",
+    "intro": "כל חישוב מציג את הקלטים, גרסת הכלל שבשימוש, פירוט צעד אחר צעד והתוצאה. הכללים נלקחים מטבלת התצורה לפי תאריך העסקה.",
+    "verifyNote": "יש לאמת שיעורים ותקרות עדכניים מול רשות המסים לפני מסירה ללקוח. זהו ניתוח לבדיקת היועץ ואינו ייעוץ מס סופי.",
+    "calculate": "חישוב",
+    "inputs": "קלטים",
+    "rulesUsed": "כללים שבשימוש",
+    "steps": {
+      "bracket": "מדרגה {from}–{to} × {rate}",
+      "total": "סה\"כ",
+      "nominalGain": "מחיר {sale} פחות הוצאות מכירה {saleCosts} פחות עלות {cost}",
+      "inflationary": "סכום אינפלציוני: מדד {cpiStart} ({periodStart}) → {cpiEnd} ({periodEnd})",
+      "realGain": "רווח ריאלי",
+      "linearBeneficial": "לינארי מוטב: {exemptDays} מתוך {totalDays} ימים פטורים (עד {until}), {taxedDays} ימים × {rate}",
+      "periodPre2001": "תקופה עד 7.11.2001: {days}/{totalDays} ימים × {rate}",
+      "period2001": "תקופה 7.11.2001–31.12.2011: {days}/{totalDays} ימים × {rate}",
+      "period2012": "תקופה מ-1.1.2012: {days}/{totalDays} ימים × {rate}",
+      "noGain": "אין שבח ריאלי — אין מס",
+      "fullExemption": "פטור מלא: מחיר המכירה עד התקרה {ceiling}",
+      "aboveCeiling": "חלק השבח המיוחס למחיר מעל התקרה {ceiling} (מחיר {price})",
+      "totalTax": "סה\"כ מס",
+      "inflationaryCpi": "סכום אינפלציוני לפי מדד {cpiStart} → {cpiEnd}",
+      "inflationaryFx": "סכום אינפלציוני לפי שער {fxBuy} → {fxSell}",
+      "lossOffset": "קיזוז הפסד מועבר",
+      "realLoss": "הפסד ריאלי (יועבר לשנים הבאות)",
+      "gainTax": "מס על הרווח × {rate}",
+      "dividendTax": "מס דיבידנד × {rate}",
+      "interestTax": "מס ריבית (לא צמודה × {unlinkedRate}, צמודה × {linkedRate})",
+      "surtax": "מס יסף: הכנסה מעל {threshold} — {above}, מתוכה הונית {capitalAbove}",
+      "fundGrowth": "צמיחת הקרן: {yieldPpm} פחות דמי ניהול {feePpm}, {months} חודשים",
+      "inflationOnPrincipal": "אינפלציה על הקרן ({inflationPpm})",
+      "fundTax": "מס בקרן × {rate} ({basis})",
+      "depositInterest": "ריבית בפיקדון ({ratePpm})",
+      "depositTax": "מס על ריבית × {rate}",
+      "difference": "הפרש נטו (קרן פחות פיקדון)",
+      "exemptPortion": "חלק פטור (תקרה {ceiling})",
+      "exemptRoute": "מסלול פטור — מס שנתי",
+      "flatRoute": "מסלול 10% — מס שנתי ({rate})",
+      "regularRoute": "מסלול רגיל — מס שנתי (הוצאות {expenses}, פחת {depreciation})",
+      "liquidDate": "נזילה אחרי {years} שנים: {date}",
+      "notLiquid": "הקרן אינה נזילה במועד המשיכה",
+      "taxableAnnual": "הכנסה חייבת שנתית",
+      "grossTax": "מס לפי מדרגות",
+      "credits": "נקודות זיכוי ({points})",
+      "annualTax": "מס שנתי",
+      "eligibleDeposit": "הפקדה מזכה",
+      "credit": "זיכוי"
+    },
+    "result": "תוצאה",
+    "warnings": {
+      "purchase": {
+        "singleConditions": "מדרגות דירה יחידה מותנות בכך שזו דירת המגורים היחידה (או דירה חלופית בתנאים) — לאמת.",
+        "newImmigrantAboveMax": "השווי מעל התקרה להטבת עולה — ההטבה אינה חלה.",
+        "newImmigrantYears": "יש לאמת שהרכישה בתוך התקופה המותרת מהעלייה."
+      },
+      "betterment": {
+        "pre1994NotSupported": "רכישה לפני 1994: סכום אינפלציוני היסטורי אינו נתמך בגרסה זו — לבדוק ידנית.",
+        "inheritanceRoute": "דירה שהתקבלה בירושה: ייתכן פטור לפי 49ב(5) אם המוריש היה זכאי — לבדוק תנאים.",
+        "giftRoute": "מתנה לקרוב: ייתכן פטור לפי סעיף 62 (וחבות מס רכישה מופחתת) — מחוץ לחישוב זה.",
+        "onlyApartmentRequired": "הפטור מחייב שזו דירת המגורים היחידה של המוכר — לא אושר.",
+        "minHolding": "תקופת ההחזקה קצרה מהנדרש לפטור."
+      },
+      "capitalGains": {
+        "fxSimplified": "נייר זר: חישוב הצמדה פשוט לפי שער — לבדיקת יועץ מס במקרים מורכבים.",
+        "lossAgainstDividends": "יש הפסד להעברה: ייתכן קיזוז מול דיבידנד/ריבית בשיעור עד 25% — לבדוק.",
+        "surtaxNotChecked": "מס יסף לא נבדק — הזינו הכנסה חייבת אחרת לשנה."
+      },
+      "moneyMarket": {
+        "simpleAnnualized": "תשואה שנתית מוצגת בקירוב פשוט; לא כולל עמלות קנייה/פדיון."
+      },
+      "rental": {
+        "routeConditions": "מסלולי שכירות למגורים בתנאים (דירת מגורים, שוכר יחיד וכו') — לאמת.",
+        "creditPointsAssumption": "הכנסה אחרת נמוכה: ייתכן שנקודות זיכוי יקטינו את המס במסלולים השוליים."
+      },
+      "studyFund": {
+        "verifyExemptPortion": "יש לאמת מול הקרן איזה חלק מהיתרה פטור (הפקדות עד התקרה).",
+        "earlyWithdrawal": "משיכה לפני מועד הנזילות חייבת במס עד השיעור השולי המרבי — לא מחושב כאן."
+      },
+      "pension": {
+        "gross": "חישוב משוער; אינו כולל ביטוח לאומי ומס בריאות."
+      }
+    },
+    "ruleFrom": "בתוקף מ-{date}",
+    "source": "מקור",
+    "save": "שמירה בתיק לקוח",
+    "saveTitle": "כותרת (רשות)",
+    "household": "לקוח",
+    "saved": "החישוב נשמר בתיק הלקוח.",
+    "cpiStatus": "מדד המחירים: {count} חודשים ({from} – {to}), בסיס {base}",
+    "cpiEmpty": "טבלת המדד ריקה — מחשבונים שדורשים מדד יבקשו הזנה ידנית או ייבוא.",
+    "cpiManage": "ניהול מדד",
+    "open": "פתיחה",
+    "noRuns": "אין חישובים שמורים.",
+    "calculators": {
+      "purchase-tax": "מס רכישה",
+      "betterment-tax": "מס שבח (דירת מגורים, יחיד)",
+      "capital-gains": "רווח הון, דיבידנד וריבית",
+      "money-market": "קרן כספית מול פיקדון",
+      "rental": "הכנסה משכירות — השוואת מסלולים",
+      "pension-tax": "מס על קצבה מזכה",
+      "study-fund": "קרן השתלמות — נזילות ומס"
+    },
+    "descriptions": {
+      "purchase-tax": "דירה יחידה, דירה נוספת, עולה חדש ומעמדות מיוחדים — לפי מדרגות בתוקף ביום הרכישה.",
+      "betterment-tax": "חישוב לינארי, לינארי מוטב ופטור דירה יחידה, כולל סכום אינפלציוני.",
+      "capital-gains": "רווח ריאלי (מדד/מט\"ח), בעל מניות מהותי, קיזוז הפסדים, דיבידנד, ריבית ומס יסף.",
+      "money-market": "תשואה נטו אחרי דמי ניהול ומס, בהשוואה לפיקדון בנקאי.",
+      "rental": "פטור, 10% או מסלול רגיל — זה לצד זה, הזול מסומן.",
+      "pension-tax": "פטור על קצבה מזכה ומס לפי מדרגות ונקודות זיכוי.",
+      "study-fund": "מועד נזילות ומס על רווחים מהפקדות מעל התקרה."
+    },
+    "fields": {
+      "value": "שווי הרכישה (₪)",
+      "date": "תאריך העסקה",
+      "kind": "סוג רוכש",
+      "yearsSinceAliyah": "שנים מהעלייה",
+      "purchaseDate": "תאריך רכישה",
+      "saleDate": "תאריך מכירה",
+      "purchasePrice": "מחיר רכישה (₪)",
+      "salePrice": "מחיר מכירה (₪)",
+      "deductibleCosts": "הוצאות רכישה והשבחה (₪)",
+      "saleCosts": "הוצאות מכירה (₪)",
+      "route": "מסלול חישוב",
+      "onlyApartment": "דירה יחידה של המוכר (מאושר ע\"י היועץ)",
+      "transfer": "סוג העברה",
+      "preNov2001Rate": "שיעור מס שולי לתקופה עד 7.11.2001 (%)",
+      "cpiPurchase": "מדד ידוע ביום הרכישה (אופציונלי)",
+      "cpiSale": "מדד ידוע ביום המכירה (אופציונלי)",
+      "buyDate": "תאריך קנייה",
+      "sellDate": "תאריך מכירה",
+      "cost": "עלות כולל עמלות (₪)",
+      "proceeds": "תמורה נטו (₪)",
+      "indexation": "שיטת הצמדה",
+      "fxBuy": "שער מט\"ח בקנייה",
+      "fxSell": "שער מט\"ח במכירה",
+      "substantialShareholder": "בעל מניות מהותי (10%+)",
+      "carriedLoss": "הפסד מועבר משנים קודמות (₪)",
+      "dividends": "דיבידנד בשנה (₪)",
+      "dividendsSubstantial": "דיבידנד כבעל מניות מהותי",
+      "interestUnlinked": "ריבית לא צמודה (₪)",
+      "interestLinkedReal": "ריבית צמודה — רכיב ריאלי (₪)",
+      "otherAnnualIncome": "הכנסה חייבת אחרת בשנה (₪) — לבדיקת מס יסף",
+      "cpiBuy": "מדד בקנייה (אופציונלי)",
+      "cpiSell": "מדד במכירה (אופציונלי)",
+      "amount": "סכום (₪)",
+      "months": "תקופה (חודשים)",
+      "fundGrossYield": "תשואה שנתית ברוטו בקרן (%)",
+      "fundFee": "דמי ניהול שנתיים בקרן (%)",
+      "depositRate": "ריבית שנתית בפיקדון (%)",
+      "expectedInflation": "אינפלציה שנתית צפויה (%)",
+      "monthlyRent": "שכר דירה חודשי (₪)",
+      "annualExpenses": "הוצאות שנתיות מוכרות (₪)",
+      "annualDepreciation": "פחת שנתי (₪)",
+      "year": "שנת מס",
+      "monthlyPension": "קצבה חודשית ברוטו (₪)",
+      "creditPoints": "נקודות זיכוי",
+      "seniorityDate": "תאריך תחילת ותק",
+      "withdrawalDate": "תאריך משיכה מתוכנן",
+      "atRetirementAge": "העמית בגיל פרישה",
+      "gainsOnNonExemptDeposits": "רווחים על הפקדות מעל התקרה (₪)"
+    },
+    "options": {
+      "SINGLE_RESIDENCE": "דירה יחידה",
+      "ADDITIONAL_RESIDENCE": "דירה נוספת",
+      "NEW_IMMIGRANT": "עולה חדש (תקנה 12א)",
+      "DISABLED": "נכה / נפגע איבה",
+      "REGULAR": "לינארי רגיל",
+      "LINEAR_BENEFICIAL": "לינארי מוטב",
+      "SINGLE_RESIDENCE_EXEMPTION": "פטור דירה יחידה (49ב(2))",
+      "SALE": "מכירה",
+      "INHERITANCE": "מכירת דירה שהתקבלה בירושה",
+      "GIFT_TO_RELATIVE": "מתנה לקרוב",
+      "CPI": "מדד המחירים לצרכן",
+      "FX": "שער מט\"ח (נייר זר)",
+      "NONE": "נומינלי"
+    },
+    "results": {
+      "tax": "מס",
+      "effectiveRatePpm": "שיעור אפקטיבי",
+      "nominalGain": "שבח/רווח נומינלי",
+      "inflationaryAmount": "סכום אינפלציוני",
+      "realGain": "רווח ריאלי",
+      "exemptGain": "רווח פטור",
+      "taxableGain": "רווח חייב",
+      "lossUsed": "הפסד שקוזז",
+      "gainTax": "מס על הרווח",
+      "dividendTax": "מס דיבידנד",
+      "interestTax": "מס ריבית",
+      "surtax": "מס יסף",
+      "totalTax": "סה\"כ מס",
+      "lossCarriedForward": "הפסד להעברה",
+      "fundNet": "קרן כספית — נטו בסוף התקופה",
+      "depositNet": "פיקדון — נטו בסוף התקופה",
+      "fundTax": "מס בקרן",
+      "depositTax": "מס בפיקדון",
+      "difference": "הפרש לטובת הקרן",
+      "fundNetAnnualPpm": "תשואה שנתית נטו — קרן",
+      "depositNetAnnualPpm": "תשואה שנתית נטו — פיקדון",
+      "annualRent": "שכר דירה שנתי",
+      "cheapest": "המסלול הזול",
+      "routes": "מסלולים",
+      "exemptMonthly": "פטור חודשי",
+      "taxableAnnual": "הכנסה חייבת שנתית",
+      "annualTax": "מס שנתי",
+      "monthlyTax": "מס חודשי",
+      "netMonthly": "קצבה נטו לחודש",
+      "liquidDate": "מועד נזילות",
+      "liquid": "נזילה במועד המשיכה",
+      "annualCredit": "זיכוי שנתי"
+    },
+    "routes": {
+      "EXEMPT": "מסלול פטור",
+      "FLAT": "מסלול 10%",
+      "REGULAR": "מסלול רגיל"
+    },
+    "errors": {
+      "input": "ערכים לא תקינים בשדות: {fields}",
+      "rule": "החישוב נעצר: הכלל {ruleKey} אינו זמין לתאריך {on} ({reason}). יש להשלים או לאמת אותו בטבלת התצורה.",
+      "cpi": "חסר מדד לחודש {period}. ייבאו את סדרת המדד או הזינו ידנית את שני המדדים.",
+      "calc": "לא ניתן לחשב: {code}",
+      "reasons": {
+        "NOT_FOUND": "לא קיים",
+        "MISSING": "חסר ערך",
+        "INVALID": "פרמטרים לא תקינים",
+        "BASE_MISMATCH": "בסיס מדד שונה"
+      },
+      "codes": {
+        "preNov2001RateRequired": "יש להזין שיעור מס שולי לתקופה עד 7.11.2001",
+        "saleBeforePurchase": "תאריך המכירה לפני הרכישה",
+        "fxRequired": "יש להזין שערי מט\"ח",
+        "monthsRange": "תקופה לא תקינה"
+      }
+    },
+    "cpi": {
+      "title": "מדד המחירים לצרכן",
+      "intro": "הורידו את סדרת המדד הכללי מאתר הלמ\"ס (CSV או XLSX) והעלו כאן. כל הערכים חייבים להיות באותו בסיס.",
+      "base": "בסיס המדד (למשל: ממוצע 2024=100)",
+      "import": "ייבוא קובץ",
+      "imported": "יובאו {count} חודשים.",
+      "manual": "הזנה ידנית",
+      "period": "חודש (YYYY-MM)",
+      "value": "ערך המדד",
+      "list": "ערכים אחרונים",
+      "errors": {
+        "invalid_base": "בסיס לא תקין",
+        "no_rows": "לא נמצאו שורות מדד בקובץ",
+        "base_mismatch": "קיימים ערכים בבסיס אחר ({existing}). כל הסדרה חייבת להיות באותו בסיס.",
+        "invalid": "ערך לא תקין"
+      }
+    },
+    "ruleEdit": {
+      "title": "עריכת כלל",
+      "params": "פרמטרים (JSON)",
+      "help": "סכומים באגורות, שיעורים ב-ppm (1% = 10000), תאריכים YYYY-MM-DD.",
+      "errors": {
+        "invalid_json": "JSON לא תקין",
+        "unknown_rule": "כלל לא מוכר",
+        "invalid_url": "קישור לא תקין (נדרש https)",
+        "source_required": "כדי לסמן 'מאומת' נדרשים פרמטרים וקישור למקור"
+      }
+    },
+    "stepsTitle": "פירוט החישוב",
+    "warningsTitle": "הערות לבדיקה"
   }
 }

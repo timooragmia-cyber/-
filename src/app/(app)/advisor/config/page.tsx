@@ -1,12 +1,11 @@
 import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
-import { Table, Td, Th } from "@/components/ui/table";
 import { requireAdvisor } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { ActionForm } from "@/components/app/action-form";
 import { Textarea } from "@/components/ui/select";
-import { confirmParamAction, updateFeeAction, updateParamAction } from "./actions";
+import { confirmParamAction, updateFeeAction, updateParamAction, updateTaxRuleAction } from "./actions";
 import { Input } from "@/components/ui/input";
 import { formatPpmPercent } from "@/lib/money";
 
@@ -33,30 +32,35 @@ export default async function ConfigPage() {
         </p>
       )}
 
-      <Card className="p-0 sm:p-0">
-        <CardTitle className="px-4 pt-4">{t("config.taxRules")}</CardTitle>
-        <Table>
-          <thead>
-            <tr>
-              <Th>{t("config.ruleKey")}</Th>
-              <Th>{t("config.effectiveFrom")}</Th>
-              <Th>{t("config.source")}</Th>
-              <Th>{t("config.verification")}</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {rules.map((r) => (
-              <tr key={r.id}>
-                <Td className="num font-mono text-xs">{r.ruleKey}</Td>
-                <Td className="num">{ymd(r.effectiveFrom)}</Td>
-                <Td className="text-xs">{r.sourceTitle ?? "—"}</Td>
-                <Td>
+      <Card>
+        <CardTitle>{t("config.taxRules")}</CardTitle>
+        <p className="mb-3 text-xs text-muted">{t("tax.ruleEdit.help")}</p>
+        <ul className="space-y-3">
+          {rules.map((r) => (
+            <li key={r.id} className="rounded-md border border-border p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="num font-mono text-xs" dir="ltr">{r.ruleKey}</span>
+                <span className="flex items-center gap-2">
+                  <span className="num text-xs text-muted">{ymd(r.effectiveFrom)} → {ymd(r.effectiveTo)}</span>
                   <Badge tone={tone(r.status)}>{t(`enums.VerificationStatus.${r.status}`)}</Badge>
-                </Td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
+                </span>
+              </div>
+              {r.notes && <p className="mt-1 text-xs text-muted">{r.notes}</p>}
+              {r.sourceUrl && <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-brand underline">{t("tax.source")}</a>}
+              {r.lastVerifiedAt && <p className="text-xs text-ok">{t("feeEdit.verifiedBy", { date: ymd(r.lastVerifiedAt) })}</p>}
+              <details className="mt-2">
+                <summary className="cursor-pointer text-sm text-brand">{t("tax.ruleEdit.title")}</summary>
+                <ActionForm action={updateTaxRuleAction} submitLabel={t("feeEdit.save")} resetOnSuccess={false} className="mt-2">
+                  <input type="hidden" name="id" value={r.id} />
+                  <label className="block text-xs">{t("tax.ruleEdit.params")}<Textarea name="params" rows={4} dir="ltr" className="font-mono text-xs" defaultValue={r.parameters === null ? "" : JSON.stringify(r.parameters)} /></label>
+                  <label className="block text-xs">{t("feeEdit.source")}<Input name="sourceUrl" dir="ltr" defaultValue={r.sourceUrl ?? ""} /></label>
+                  <label className="block text-xs">{t("feeEdit.notes")}<Textarea name="notes" rows={2} defaultValue={r.notes ?? ""} /></label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="verify" /> {t("feeEdit.verify")}</label>
+                </ActionForm>
+              </details>
+            </li>
+          ))}
+        </ul>
       </Card>
 
       <Card>
