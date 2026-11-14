@@ -243,6 +243,17 @@ async function seedDemo(advisorId: string) {
       });
     }
 
+    // Phase 4: mortgage & loans
+    if (d.debt?.mortgage) {
+      const mg = await db.mortgage.create({ data: { householdId: h.id, lender: d.debt.mortgage.lender, asOf: new Date("2026-10-31T00:00:00Z") } });
+      for (const tr of d.debt.mortgage.tracks) {
+        await db.mortgageTrack.create({ data: { mortgageId: mg.id, type: tr.type, balance: agorot(tr.balance), remainingMonths: tr.months, annualRatePpm: Math.round(tr.ratePct * 10_000), monthsToReset: tr.type.startsWith("VARIABLE_5") ? (tr.reset ?? 60) : null } });
+      }
+    }
+    for (const l of d.debt?.loans ?? []) {
+      await db.loan.create({ data: { householdId: h.id, kind: l.kind, lender: l.lender, label: l.label, balance: agorot(l.balance), annualRatePpm: Math.round(l.ratePct * 10_000), monthlyPayment: agorot(l.payment), remainingMonths: l.months } });
+    }
+
     for (const b of d.budgets) {
       await db.budget.create({ data: { householdId: h.id, categoryId: catByKey.get(b.category)!.id, monthlyAmount: agorot(b.amount), effectiveFrom: "2026-05" } });
     }

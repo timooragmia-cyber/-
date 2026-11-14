@@ -7,6 +7,7 @@ import { setTaskStatus } from "@/server/clients";
 import { UnsupportedFileError } from "@/server/import/adapters";
 import { uploadStatement } from "@/server/import/service";
 import { rateLimit } from "@/server/rate-limit";
+import { updateRecommendation } from "@/server/plan/service";
 
 /** Client actions: the household id always comes from the session, never from the form. */
 export async function clientUploadAction(_p: ActionState, f: FormData): Promise<ActionState> {
@@ -29,6 +30,15 @@ export async function clientTaskStatusAction(_p: ActionState, f: FormData): Prom
   const status = String(f.get("status"));
   if (status !== "IN_PROGRESS" && status !== "DONE") return { error: "form.invalid" };
   await setTaskStatus(user, user.householdId, String(f.get("taskId")), status);
+  revalidatePath("/portal");
+  return { ok: true };
+}
+
+export async function clientPlanStatusAction(_p: ActionState, f: FormData): Promise<ActionState> {
+  const user = await requireClient();
+  const status = String(f.get("status"));
+  if (status !== "IN_PROGRESS" && status !== "DONE") return { error: "form.invalid" };
+  await updateRecommendation(user, user.householdId, String(f.get("recId")), { status });
   revalidatePath("/portal");
   return { ok: true };
 }

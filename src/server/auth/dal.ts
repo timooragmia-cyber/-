@@ -43,6 +43,20 @@ const getAuthState = cache(async (): Promise<{ user: CurrentUser; secondFactorDo
   };
 });
 
+/**
+ * Fully authenticated user or null — for route handlers that must answer 401 instead of
+ * redirecting. Applies the same 2FA and password-change rules as requireUser.
+ */
+export async function getCurrentUserOrNull(): Promise<CurrentUser | null> {
+  const state = await getAuthState();
+  if (!state) return null;
+  const { user } = state;
+  if (user.role === "ADVISOR" && !user.totpEnabled) return null;
+  if (requiresSecondFactor(user.role, user.totpEnabled) && !state.secondFactorDone) return null;
+  if (user.mustChangePassword) return null;
+  return user;
+}
+
 /** Session user regardless of 2FA state (used only by the login/2FA flow itself). */
 export async function getPartialUser(): Promise<{ user: CurrentUser; secondFactorDone: boolean } | null> {
   return getAuthState();

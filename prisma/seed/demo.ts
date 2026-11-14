@@ -52,6 +52,11 @@ export type DemoHousehold = {
       valuations: { asOf: string; values: Record<string, number> }[] };
     deposits?: { kind: "BANK_DEPOSIT" | "MONEY_MARKET_FUND"; institution: string; label: string; balance: number; ratePct: number; feePct: number; maturity?: string }[];
   };
+  /** Phase 4: mortgage tracks and loans (fictional). */
+  debt?: {
+    mortgage?: { lender: string; tracks: { type: "PRIME" | "FIXED_UNLINKED" | "FIXED_LINKED" | "VARIABLE_5_UNLINKED" | "VARIABLE_5_LINKED"; balance: number; months: number; ratePct: number; reset?: number }[] };
+    loans?: { kind: "CARD_CREDIT" | "CONSUMER_LOAN" | "CAR_LOAN" | "OTHER"; lender: string; label: string; balance: number; ratePct: number; payment: number; months: number | null }[];
+  };
   notes: string[];
   tasks: string[];
 };
@@ -101,6 +106,7 @@ export const demoHouseholds: DemoHousehold[] = [
     invest: {
       deposits: [{ kind: "BANK_DEPOSIT", institution: "לאומי", label: "פיקדון שקלי 6 חודשים", balance: 5000, ratePct: 3.6, feePct: 0, maturity: "2027-03-01" }],
     },
+    debt: { loans: [{ kind: "CONSUMER_LOAN", lender: "לאומי", label: "הלוואה 4471", balance: 38000, ratePct: 8.9, payment: 1350, months: 30 }] },
     lines: khatib,
     closePeriods: ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"],
     learned: [{ description: "העברה - לקוח עבודות חשמל", category: "income_business" }],
@@ -175,6 +181,13 @@ export const demoHouseholds: DemoHousehold[] = [
       },
       deposits: [{ kind: "MONEY_MARKET_FUND", institution: "מור", label: "קרן כספית — כרית ביטחון", balance: 42000, ratePct: 4.1, feePct: 0.1 }],
     },
+    debt: {
+      mortgage: { lender: "דיסקונט למשכנתאות", tracks: [
+        { type: "PRIME", balance: 250000, months: 180, ratePct: 4.25 },
+        { type: "FIXED_UNLINKED", balance: 200000, months: 180, ratePct: 5.1 },
+        { type: "FIXED_LINKED", balance: 160000, months: 180, ratePct: 3.2 },
+      ] },
+    },
     lines: halabi,
     closePeriods: ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"],
     learned: [],
@@ -206,6 +219,10 @@ export const demoHouseholds: DemoHousehold[] = [
     products: [
       { person: "محمد", type: "PENSION_COMPREHENSIVE", provider: "כלל פנסיה", track: "מסלול לבני 50 ומטה", balance: 48000, history: [["2026-06-30", 46500]], employee: 850, employer: 920, severance: 1170, feeDepPct: 6, feeAccPct: 0.5, start: "2016-03-01", active: true },
     ],
+    debt: { loans: [
+      { kind: "CAR_LOAN", lender: "טויוטה פיננסים", label: "הלוואת רכב", balance: 62000, ratePct: 7.2, payment: 2350, months: 30 },
+      { kind: "CONSUMER_LOAN", lender: "הפועלים", label: "הלוואה צרכנית", balance: 25000, ratePct: 11.5, payment: 1600, months: 17 },
+    ] },
     lines: osman,
     closePeriods: ["2026-06", "2026-07", "2026-08"],
     learned: [{ description: "העברה - עבודה פרטית", category: "income_business" }],

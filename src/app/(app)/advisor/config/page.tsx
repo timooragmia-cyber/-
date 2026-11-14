@@ -71,7 +71,7 @@ export default async function ConfigPage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm font-medium">{t(`productType.${f.productType}`)} · {f.feeBase === "DEPOSITS" ? t("sim.fromDeposit") : t("sim.fromBalance")}</span>
                 <span className="flex items-center gap-2">
-                  <span className="num text-xs text-muted">{t("savings.benchmark")} {f.benchmarkPpm !== null ? formatPpmPercent(f.benchmarkPpm, "he", 3) : "—"} · {t("savings.ceiling")} {f.legalCeilingPpm !== null ? formatPpmPercent(f.legalCeilingPpm, "he", 3) : "—"}</span>
+                  <span className="text-xs text-muted">{t("savings.benchmark")} <span className="num">{f.benchmarkPpm !== null ? formatPpmPercent(f.benchmarkPpm, "he", 3) : "—"}</span> · {t("savings.ceiling")} <span className="num">{f.legalCeilingPpm !== null ? formatPpmPercent(f.legalCeilingPpm, "he", 3) : "—"}</span></span>
                   <Badge tone={tone(f.status)}>{t(`enums.VerificationStatus.${f.status}`)}</Badge>
                 </span>
               </div>
@@ -106,7 +106,7 @@ export default async function ConfigPage() {
                 <Badge tone={p.confirmedAt ? "ok" : "warn"}>{p.confirmedAt ? t("configEdit.confirmed") : t("configEdit.unconfirmed")}</Badge>
               </div>
               <p className="mt-1 text-sm text-muted">{p.description}</p>
-              <p className="num mt-1 text-xs text-muted">{t("config.effectiveFrom")} {ymd(p.effectiveFrom)}</p>
+              <p className="mt-1 text-xs text-muted">{t("config.effectiveFrom")} <span className="num">{ymd(p.effectiveFrom)}</span></p>
               <div className="mt-2 flex flex-wrap items-start gap-3">
                 <ActionForm action={updateParamAction} submitLabel={t("configEdit.edit")} variant="outline" resetOnSuccess={false} className="min-w-64 flex-1">
                   <input type="hidden" name="key" value={p.key} />

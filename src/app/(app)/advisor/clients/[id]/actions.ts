@@ -13,6 +13,9 @@ import { closeMonth } from "@/server/months";
 import { db } from "@/server/db";
 import { audit } from "@/server/audit";
 import * as invest from "@/server/invest/service";
+import * as debt from "@/server/debt/service";
+import * as plan from "@/server/plan/service";
+import * as reports from "@/server/reports/service";
 import { parseAmount } from "@/lib/money";
 import * as savings from "@/server/savings/service";
 import { accountDetailsSchema, balanceSchema, recordBalance, updateAccountDetails } from "@/server/accounts";
@@ -362,4 +365,81 @@ export async function saveDepositAction(_p: ActionState, f: FormData) {
     if (!v.success) return { error: "form.invalid" };
     await invest.saveDeposit(u, h, v.data, String(f.get("depositId") ?? "") || undefined);
   });
+}
+
+// ── Phase 4: mortgage & debt, action plan, reports ──────────────────────────
+
+export async function saveMortgageAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const v = debt.mortgageSchema.safeParse(obj(f));
+    if (!v.success) return { error: "form.invalid" };
+    await debt.saveMortgage(u, h, v.data);
+  });
+}
+
+export async function addTrackAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const v = debt.trackSchema.safeParse(obj(f));
+    if (!v.success) return { error: "form.invalid" };
+    await debt.addTrack(u, h, String(f.get("mortgageId")), v.data);
+  });
+}
+
+export async function saveLoanAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const v = debt.loanSchema.safeParse(obj(f));
+    if (!v.success) return { error: "form.invalid" };
+    await debt.saveLoan(u, h, v.data);
+  });
+}
+
+export async function deleteDebtAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const kind = String(f.get("kind"));
+    if (!["mortgage", "track", "loan"].includes(kind)) return { error: "form.invalid" };
+    await debt.deleteDebtEntity(u, h, kind as "loan", String(f.get("id")));
+  });
+}
+
+export async function regeneratePlanAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u): Promise<ActionState> => {
+    const r = await plan.regeneratePlan(u, h);
+    revalidatePath(`/advisor/clients/${h}`, "layout");
+    return { ok: true, message: "plan.regenerated", values: { count: r.count } };
+  });
+}
+
+export async function updateRecommendationAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => {
+    const status = String(f.get("status") ?? "");
+    const move = String(f.get("move") ?? "");
+    const hasText = f.has("customTitle");
+    await plan.updateRecommendation(u, h, String(f.get("recId")), {
+      status: ["PROPOSED", "APPROVED", "IN_PROGRESS", "DONE", "DISMISSED"].includes(status) ? (status as "APPROVED") : undefined,
+      move: move === "up" || move === "down" ? move : undefined,
+      customTitle: hasText ? String(f.get("customTitle")).trim().slice(0, 200) || null : undefined,
+      advisorNote: f.has("advisorNote") ? String(f.get("advisorNote")).trim().slice(0, 1000) || null : undefined,
+    });
+  });
+}
+
+export async function generateReportAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u): Promise<ActionState> => {
+    const kind = String(f.get("type"));
+    const locale = String(f.get("locale"));
+    if ((kind !== "MONTHLY" && kind !== "FULL_REVIEW") || (locale !== "he" && locale !== "ar")) return { error: "form.invalid" };
+    const period = String(f.get("period") ?? "") || null;
+    try {
+      await reports.generateReport(u, h, kind, locale, period && /^\d{4}-\d{2}$/.test(period) ? period : null);
+    } catch (e) {
+      console.error(e);
+      return { error: "reports.error", values: { error: e instanceof Error ? e.message.slice(0, 120) : "?" } };
+    }
+    revalidatePath(`/advisor/clients/${h}/reports`);
+    return { ok: true, message: "reports.generated" };
+  });
+}
+
+export async function releaseReportAction(_p: ActionState, f: FormData) {
+  return run(f, async (h, u) => reports.releaseReport(u, h, String(f.get("reportId"))));
 }

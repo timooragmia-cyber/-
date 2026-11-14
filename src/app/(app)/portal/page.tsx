@@ -11,7 +11,10 @@ import { requireClient } from "@/server/auth/dal";
 import { getHouseholdProfile } from "@/server/households";
 import { householdInsights, loadCategories } from "@/server/months";
 import { catName, type Loc } from "@/server/view";
-import { clientTaskStatusAction } from "./actions";
+import { clientPlanStatusAction, clientTaskStatusAction } from "./actions";
+import { RecAction } from "@/components/app/rec-action";
+import { listPlan } from "@/server/plan/service";
+import { recommendationText } from "@/server/plan/text";
 import { db } from "@/server/db";
 
 /**
@@ -27,6 +30,10 @@ export default async function PortalPage() {
   const locale = (await getLocale()) as Loc;
   const latest = insights.closed[0];
   // Balances only — fee analysis and projections stay advisor-side until approved (Phase 4 plan).
+  const [plan, reports] = await Promise.all([
+    listPlan(user, user.householdId),
+    db.report.findMany({ where: { householdId: user.householdId, releasedAt: { not: null } }, orderBy: { releasedAt: "desc" }, take: 6 }),
+  ]);
   const products = await db.longTermProduct.findMany({ where: { householdId: user.householdId }, include: { person: { select: { firstName: true } } }, orderBy: { balance: "desc" } });
   const names = new Map([...cats.values()].map((c) => [c.key, catName(c, locale)]));
   const byKey = new Map([...cats.values()].map((c) => [c.key, c]));
@@ -55,6 +62,43 @@ export default async function PortalPage() {
           <p className="text-muted">{t("portal.noDataYet")}</p>
         )}
       </Card>
+
+      {plan.length > 0 && (
+        <Card>
+          <CardTitle>{t("portalPlan.title")}</CardTitle>
+          <ol className="space-y-3">
+            {plan.map((r) => {
+              const { title, reason } = recommendationText(t, locale, r);
+              return (
+                <li key={r.id} className="text-sm">
+                  <p className="font-medium">{r.status === "DONE" ? "✓ " : ""}{title}</p>
+                  <p className="text-muted">{reason}</p>
+                  {r.status !== "DONE" && (
+                    <div className="mt-1 flex gap-2">
+                      {r.status === "APPROVED" && <RecAction action={clientPlanStatusAction} recId={r.id} status="IN_PROGRESS" label={t("portalPlan.start")} />}
+                      <RecAction action={clientPlanStatusAction} recId={r.id} status="DONE" label={t("portalPlan.done")} variant="default" />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </Card>
+      )}
+
+      {reports.length > 0 && (
+        <Card>
+          <CardTitle>{t("portalPlan.reports")}</CardTitle>
+          <ul className="space-y-1 text-sm">
+            {reports.map((r) => (
+              <li key={r.id} className="flex justify-between gap-2">
+                <span>{t(`reports.${r.type}`)}{r.period ? ` · ${r.period}` : ""}</span>
+                <a className="text-brand underline" href={`/api/reports/${r.id}`}>{t("reports.download")}</a>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {h && h.actionItems.length > 0 && (
         <Card>

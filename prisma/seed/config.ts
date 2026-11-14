@@ -78,5 +78,13 @@ export const advisoryParameters: { key: string; value: unknown; description: str
       { key: "study_fund", expectedReturnPpm: 55000, feePpm: 5000, tax: "STUDY_FUND_EXEMPT", risk: "MEDIUM", liquidity: "YEARS", maxAnnualContribution: 2056600 },
     ],
     description: "מסלולי השוואה — תשואות צפויות הן הנחות של היועץ (לא תחזית ולא נתוני שוק). השתלמות: פטור בתנאים; תקרת 20,566 ₪ לשנה לעצמאי לפי מקור משני — לאמת" },
+  { key: "rates.bank_of_israel", value: { ratePpm: 32500, primeSpreadPpm: 15000, effectiveFrom: "2026-09-03", sourceUrl: "https://www.kantahome.com/forecasts-and-indexes/prime" },
+    description: "ריבית בנק ישראל 3.25% → פריים 4.75% (בתוקף מ-3.9.2026, מקור משני; ההחלטה הבאה 23.11.2026) — לעדכן אחרי כל החלטת ריבית" },
+  { key: "mortgage.mix_constraints", value: { minFixedPpm: 333333, maxVariablePpm: 666667 },
+    description: "מגבלות תמהיל (הוראת בנק ישראל): לפחות שליש בריבית קבועה, עד שני שלישים בריבית משתנה — לא אומת מול נוסח ההוראה העדכני" },
+  { key: "mortgage.scenarios", value: { baseInflationPpm: 25000, stress: { primeDeltaPpm: 20000, primeChangeAfter: 12, resetDeltaPpm: 20000, inflationPpm: 40000 }, falling: { primeDeltaPpm: -10000, primeChangeAfter: 12, resetDeltaPpm: -10000, inflationPpm: 20000 } },
+    description: "תרחישי ריבית למשכנתא: בסיס (אינפלציה 2.5%), לחץ (+2% פריים ואיפוס, אינפלציה 4%), ירידה (−1%, אינפלציה 2%) — הנחות" },
+  { key: "plan.params", value: { savingsShareOfSurplusPpm: 500000, minSubscriptionAnnualAgorot: 30000 },
+    description: "תוכנית פעולה: הוראת קבע לחיסכון = 50% מהעודף הממוצע; מנוי נכנס להמלצה מ-300 ₪ בשנה" },
   { key: "health_score.weights", value: { savingsRate: 30, emergencyFund: 25, debtLoad: 25, fixedCostRatio: 20 }, description: "משקלות מדד הבריאות הפיננסית (סה\"כ 100) — שקוף ללקוח וליועץ" },
 ];

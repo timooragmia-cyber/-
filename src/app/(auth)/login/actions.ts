@@ -11,7 +11,7 @@ import { createSession, destroySession, markSecondFactorDone } from "@/server/au
 import { generateRecoveryCodes, verifyTotp } from "@/server/auth/totp";
 import { decrypt } from "@/server/crypto";
 import { db } from "@/server/db";
-import { rateLimit } from "@/server/rate-limit";
+import { rateLimit, resetRateLimit } from "@/server/rate-limit";
 import { LOCALE_COOKIE } from "@/i18n/config";
 
 const MAX_FAILED = 5;
@@ -64,6 +64,7 @@ export async function loginAction(_prev: FormState, form: FormData): Promise<For
   }
 
   await db.user.update({ where: { id: user.id }, data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date() } });
+  resetRateLimit(`login:email:${email}`);
   // Kill any previous session cookie (fixation) before issuing a new one.
   await destroySession();
   const needs2fa = requiresSecondFactor(user.role, user.totpEnabledAt !== null);
@@ -107,6 +108,7 @@ export async function verifySecondFactorAction(_prev: FormState, form: FormData)
     return { error: "invalidCode" };
   }
   await markSecondFactorDone(user.sessionId);
+  resetRateLimit(`2fa:${user.id}`);
   redirect(homeFor(user.role));
 }
 

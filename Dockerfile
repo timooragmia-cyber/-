@@ -14,6 +14,10 @@ RUN npx prisma generate && npm run build
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1
+# Chromium renders the PDF reports (src/server/reports/pdf.ts). Fonts are embedded in the
+# HTML, so no extra font packages are needed for Hebrew/Arabic.
+RUN apt-get update && apt-get install -y --no-install-recommends chromium && rm -rf /var/lib/apt/lists/*
+ENV CHROMIUM_PATH=/usr/bin/chromium
 RUN useradd --system --uid 1001 app && mkdir -p /app/storage && chown app /app/storage
 COPY --from=build --chown=app /app/.next/standalone ./
 COPY --from=build --chown=app /app/.next/static ./.next/static

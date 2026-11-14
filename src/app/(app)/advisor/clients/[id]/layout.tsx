@@ -29,6 +29,9 @@ export default async function ClientLayout({ children, params }: { children: Rea
           { href: `${base}/savings`, label: t("savings") },
           { href: `${base}/investments`, label: t("investments") },
           { href: `${base}/routes`, label: t("routes") },
+          { href: `${base}/debt`, label: t("debt") },
+          { href: `${base}/plan`, label: t("plan") },
+          { href: `${base}/reports`, label: t("reports") },
           { href: `${base}/calculations`, label: t("calculations") },
           { href: `${base}/tasks`, label: t("tasks") },
         ]}

@@ -1,6 +1,6 @@
 # Architecture — T.A Mortgages Financial Platform
 
-Status: **Phase 3a** (tax engine and calculators). This document is the contract for every later phase.
+Status: **Phase 4** (mortgage & debt, action plan, PDF reports). This document is the contract for every later phase.
 
 ## 1. Product shape
 
@@ -115,6 +115,14 @@ The adapter interface (`ImportAdapter` in `src/lib/import/types.ts`) is `canHand
 - Calculators are pure functions returning `{ rulesUsed, steps, result, warnings, version }`; the UI renders all of it, and a saved run stores all of it (`calculation_runs`).
 - CPI lives in `cpi_values` (×1000, one base enforced); `knownIndexPeriod` implements the known-index convention.
 - Calculator pages are GET forms (shareable URLs); saving to a client file re-computes on the server.
+
+## 6d. Debt, plan and reports (Phase 4)
+
+- `src/lib/debt/*` (amortization, scenarios, refinance, mix optimizer, ranking, consolidation) and `src/lib/plan/engine.ts` are pure; method in `docs/calculations/debt-plan.md`.
+- Recommendations persist with a `dedupKey` per household, so regeneration never overwrites an advisor decision. Every status change is audited.
+- **Approval gate**: the portal and the PDF include only APPROVED / IN_PROGRESS / DONE recommendations; reports reach the client only after an explicit release, and `/api/reports/[id]` returns 404 otherwise.
+- PDF: HTML built on the server, then rendered by Chromium (`src/server/reports/pdf.ts`) with JavaScript disabled and every network request blocked. Fonts are embedded as data URIs. The PDF is stored encrypted with its SHA-256.
+- The report language is explicit (`getTranslations({ locale })`) and independent of the viewer's UI language.
 
 ## 7. Deployment (summary; the full guide comes in Phase 5)
 

@@ -28,7 +28,7 @@ export default async function CalculationsPage({ params }: { params: Promise<{ i
               <p className="num text-xs text-muted">{r.createdAt.toISOString().slice(0, 16).replace("T", " ")} · {r.version}</p>
             </div>
             <div className="flex items-center gap-3">
-              {key && <span className="num font-semibold">{t(`tax.results.${key}`)}: {formatMoney(BigInt(result[key] as string), locale)}</span>}
+              {key && <span className="font-semibold">{t(`tax.results.${key}`)}: <span className="num">{formatMoney(BigInt(result[key] as string), locale)}</span></span>}
               <Link href={href} className="text-sm text-brand underline">{t("tax.open")}</Link>
             </div>
           </li>

@@ -40,5 +40,13 @@ export const ADVISORY_SCHEMAS: Record<string, z.ZodType> = {
     liquidity: z.enum(["DAILY", "AT_MATURITY", "YEARS"]),
     maxAnnualContribution: z.number().int().min(0).nullable().optional(),
   })).min(1).max(12),
+  "rates.bank_of_israel": z.object({ ratePpm: z.number().int().min(0).max(300_000), primeSpreadPpm: z.number().int().min(0).max(100_000), effectiveFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), sourceUrl: z.string().url() }),
+  "mortgage.mix_constraints": z.object({ minFixedPpm: z.number().int().min(0).max(1_000_000), maxVariablePpm: z.number().int().min(0).max(1_000_000) }),
+  "mortgage.scenarios": z.object({
+    baseInflationPpm: z.number().int().min(-50_000).max(200_000),
+    stress: z.object({ primeDeltaPpm: z.number().int(), primeChangeAfter: z.number().int().min(0), resetDeltaPpm: z.number().int(), inflationPpm: z.number().int() }),
+    falling: z.object({ primeDeltaPpm: z.number().int(), primeChangeAfter: z.number().int().min(0), resetDeltaPpm: z.number().int(), inflationPpm: z.number().int() }),
+  }),
+  "plan.params": z.object({ savingsShareOfSurplusPpm: z.number().int().min(0).max(1_000_000), minSubscriptionAnnualAgorot: z.number().int().min(0) }),
   "cashflow.calendar": z.object({ lookbackMonths: z.number().int().min(2).max(12), minMonths: z.number().int().min(2).max(12), projectionDays: z.number().int().min(7).max(92) }),
 };

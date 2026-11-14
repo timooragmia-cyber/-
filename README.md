@@ -2,11 +2,11 @@
 
 Advisor workspace + client portal for household finances: monthly close, improvement tracking, fee reduction, and a prioritized savings & investment plan. Hebrew and Arabic, full RTL.
 
-> **Status: Phase 3 complete (tax engine + calculators, investments: real estate, portfolio, deposits, route comparison)** — Phase 4 (mortgage & debt, action plan, PDF reports) next — see `CHANGELOG.md`. All figures in the UI are labeled *analysis for advisor review*. Tax and fee tables are intentionally empty until they are verified (`docs/UNVERIFIED.md`).
+> **Status: Phase 4 complete (mortgage & debt, action plan with advisor approval, PDF reports in Hebrew/Arabic)** — Phase 5 (security hardening, privacy rights, deployment guide) next — see `CHANGELOG.md`. All figures in the UI are labeled *analysis for advisor review*. Tax and fee tables are intentionally empty until they are verified (`docs/UNVERIFIED.md`).
 
 ## Quick start (local)
 
-Requires Node 22+ and PostgreSQL 16.
+Requires Node 22+ and PostgreSQL 16. PDF reports need Chromium (Playwright's, or set `CHROMIUM_PATH`; the Docker image includes it).
 
 ```bash
 cp .env.example .env            # fill DATABASE_URL and generate the two keys (see comments)
@@ -61,4 +61,5 @@ Two fictional statement files live in `tests/fixtures/` (a bank CSV with title r
 - `docs/calculations/fee-simulator.md` — simulator method and reference examples
 - `docs/calculations/tax-examples.md` — tax calculators: method and documented examples
 - `docs/calculations/investments.md` — investment modules: method and documented examples
-- `docs/screenshots/` — screens per phase (`p1-*`, `p2-*`)
+- `docs/calculations/debt-plan.md` — mortgage, debt, action plan and PDF reports
+- `docs/screenshots/` — screens per phase (`p1-*` … `p4-*`, including sample PDFs)

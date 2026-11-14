@@ -124,6 +124,21 @@ export async function periodsWithData(householdId: string): Promise<string[]> {
 
 const avg = (vals: number[]) => (vals.length ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : null);
 
+/** Liquid money: positive bank balances + money-market funds + deposits maturing within 90 days. */
+export async function liquidAssets(householdId: string): Promise<{ amount: bigint; known: boolean }> {
+  const [banks, deposits] = await Promise.all([
+    db.financialAccount.findMany({ where: { householdId, kind: "BANK_ACCOUNT" }, include: { balances: { orderBy: { asOf: "desc" }, take: 1 } } }),
+    db.savingsDeposit.findMany({ where: { householdId } }),
+  ]);
+  const soon = new Date(Date.now() + 90 * 86_400_000);
+  const withBal = banks.filter((b) => b.balances[0]);
+  const liquidDeposits = deposits.filter((d) => d.kind === "MONEY_MARKET_FUND" || d.maturityDate === null || d.maturityDate <= soon);
+  const amount =
+    withBal.reduce((s, b) => s + (b.balances[0]!.balance > 0n ? b.balances[0]!.balance : 0n), 0n) +
+    liquidDeposits.reduce((s, d) => s + d.balance, 0n);
+  return { amount, known: withBal.length > 0 || liquidDeposits.length > 0 };
+}
+
 export async function householdInsights(householdId: string) {
   const [closed, recurringParams, highlightParams, weights, targets] = await Promise.all([
     getClosedMonths(householdId, 12),
@@ -161,17 +176,8 @@ export async function householdInsights(householdId: string) {
   // Liquid = positive bank balances + money-market funds (daily liquidity) + deposits that
   // mature within 90 days (or have no fixed maturity).
   const avgExpenses = last3.length ? last3.reduce((s, m) => s + m.totals.expenses, 0n) / BigInt(last3.length) : 0n;
-  const [banks, deposits] = await Promise.all([
-    db.financialAccount.findMany({ where: { householdId, kind: "BANK_ACCOUNT" }, include: { balances: { orderBy: { asOf: "desc" }, take: 1 } } }),
-    db.savingsDeposit.findMany({ where: { householdId } }),
-  ]);
-  const soon = new Date(Date.now() + 90 * 86_400_000);
-  const withBal = banks.filter((b) => b.balances[0]);
-  const liquidDeposits = deposits.filter((d) => d.kind === "MONEY_MARKET_FUND" || d.maturityDate === null || d.maturityDate <= soon);
-  const liquid =
-    withBal.reduce((s, b) => s + (b.balances[0]!.balance > 0n ? b.balances[0]!.balance : 0n), 0n) +
-    liquidDeposits.reduce((s, d) => s + d.balance, 0n);
-  const emergencyFundMonths = (withBal.length || liquidDeposits.length) && avgExpenses > 0n ? Number((liquid * 10n) / avgExpenses) / 10 : null;
+  const liquid = await liquidAssets(householdId);
+  const emergencyFundMonths = liquid.known && avgExpenses > 0n ? Number((liquid.amount * 10n) / avgExpenses) / 10 : null;
   const health = computeHealthScore(
     {
       savingsRatePpm: avg(last3.map((m) => m.totals.savingsRatePpm)),

@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.6.0] — Phase 4: Mortgage & debt, action plan, PDF reports (2026-11-14)
+
+### Added
+- **Mortgages**: tracks (prime, fixed unlinked/linked, variable-5 unlinked/linked), Spitzer or equal principal, CPI indexation, prime and reset changes; three scenarios (base / stress / falling) with first and maximum payment, total interest and indexation, yearly schedule.
+- **Refinance / early-repayment simulator** (monthly change, total saving after fee and opening costs, break-even month) and **mix optimizer** (cheapest / safest / balanced under the configured mix constraints).
+- **Debts**: loans and overdrafts (derived from bank accounts) ranked by interest, yearly interest cost, "expensive" flag against the advisor's threshold, **consolidation simulator**.
+- **Action-plan engine** with a fixed conservative order (emergency fund → expensive debt → fees → subscriptions → bank fees → automate savings → invest surplus), monthly and lifetime impact; advisor approval, reorder, title and note; regeneration keeps the advisor's decisions.
+- **Client portal**: approved actions only, with "started" / "done"; released reports.
+- **PDF reports** (monthly and full review) in Hebrew or Arabic, rendered server-side with embedded fonts, stored encrypted, released to the client explicitly.
+- Advisor parameters: Bank of Israel rate/prime spread, mix constraints, scenarios, plan parameters (all dated, sourced, awaiting confirmation).
+- Demo: Halabi mortgage (3 tracks), Osman car + consumer loans, Khatib loan.
+- Tests: 233 unit tests (examples in `docs/calculations/debt-plan.md`); Phase 4 E2E (simulators, threshold via config, plan approval, client visibility, PDF generate/release/download, 404 for unreleased).
+
+### Fixed during build
+- An explicit report language was ignored (translations followed the viewer's cookie), so an Arabic PDF came out with Hebrew labels.
+- Amounts after a label rendered in the wrong order in RTL (the LTR isolation wrapped the label too) on the plan, configuration and calculations screens.
+- Successful logins and 2FA counted toward the rate limit; now only consecutive failures are throttled (IP limit unchanged).
+- Missing PDF fonts now fail loudly instead of producing an unreadable report.
+
 ## [0.5.0] — Phase 3b: Investments and route comparison (2026-11-14)
 
 ### Added

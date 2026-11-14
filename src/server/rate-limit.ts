@@ -20,3 +20,8 @@ export function rateLimit(key: string, limit: number, windowMs: number, now = Da
   b.count += 1;
   return b.count <= limit ? { ok: true, retryAfterMs: 0 } : { ok: false, retryAfterMs: b.resetAt - now };
 }
+
+/** Clears a key after a successful attempt, so only consecutive failures are throttled. */
+export function resetRateLimit(key: string): void {
+  buckets.delete(key);
+}

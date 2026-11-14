@@ -149,6 +149,10 @@ model Household {
   properties            Property[]
   portfolioAccounts     PortfolioAccount[]
   savingsDeposits       SavingsDeposit[]
+  mortgages             Mortgage[]
+  loans                 Loan[]
+  recommendations       Recommendation[]
+  reports               Report[]
 
   @@map("households")
 }
@@ -1023,4 +1027,142 @@ model SavingsDeposit {
 
   @@index([householdId])
   @@map("savings_deposits")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Module E — Mortgage & debt (Phase 4)
+// ─────────────────────────────────────────────────────────────
+
+enum MortgageTrackType {
+  PRIME
+  FIXED_UNLINKED
+  FIXED_LINKED
+  VARIABLE_5_UNLINKED
+  VARIABLE_5_LINKED
+}
+
+enum AmortizationMethod {
+  SPITZER
+  EQUAL_PRINCIPAL
+}
+
+model Mortgage {
+  id          String    @id @default(cuid())
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  lender      String
+  propertyId  String? // optional link to a Property (Phase 3b)
+  asOf        DateTime  @db.Date
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tracks MortgageTrack[]
+
+  @@index([householdId])
+  @@map("mortgages")
+}
+
+model MortgageTrack {
+  id              String             @id @default(cuid())
+  mortgageId      String
+  mortgage        Mortgage           @relation(fields: [mortgageId], references: [id], onDelete: Cascade)
+  type            MortgageTrackType
+  method          AmortizationMethod @default(SPITZER)
+  balance         BigInt
+  remainingMonths Int
+  annualRatePpm   Int // current rate (for PRIME: prime + margin today)
+  primeMarginPpm  Int? // PRIME only: margin vs prime (can be negative)
+  monthsToReset   Int? // VARIABLE_5_* only
+
+  @@index([mortgageId])
+  @@map("mortgage_tracks")
+}
+
+enum LoanKind {
+  CARD_CREDIT
+  CONSUMER_LOAN
+  CAR_LOAN
+  OTHER
+}
+
+model Loan {
+  id              String    @id @default(cuid())
+  householdId     String
+  household       Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  kind            LoanKind
+  lender          String
+  label           String
+  balance         BigInt
+  annualRatePpm   Int
+  monthlyPayment  BigInt
+  remainingMonths Int?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([householdId])
+  @@map("loans")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Module F — Action plan (Phase 4)
+// ─────────────────────────────────────────────────────────────
+
+enum RecommendationStatus {
+  PROPOSED
+  APPROVED
+  IN_PROGRESS
+  DONE
+  DISMISSED
+}
+
+model Recommendation {
+  id               String               @id @default(cuid())
+  householdId      String
+  household        Household            @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  ruleKey          String
+  dedupKey         String
+  priority         Int
+  reason           Json // parameters for the i18n reason text
+  impactMonthly    BigInt?
+  impactLifetime   BigInt?
+  status           RecommendationStatus @default(PROPOSED)
+  customTitle      String? // advisor's own wording (overrides the generated text)
+  advisorNote      String?
+  engineVersion    String
+  approvedByUserId String?
+  approvedAt       DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@unique([householdId, dedupKey])
+  @@index([householdId, status])
+  @@map("recommendations")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Reports (Phase 4) — PDF stored encrypted; visible to the client only after release
+// ─────────────────────────────────────────────────────────────
+
+enum ReportType {
+  MONTHLY
+  FULL_REVIEW
+}
+
+model Report {
+  id              String     @id @default(cuid())
+  householdId     String
+  household       Household  @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  type            ReportType
+  period          String?
+  locale          Locale
+  storageKey      String     @unique
+  sha256          String
+  sizeBytes       Int
+  createdByUserId String
+  createdAt       DateTime   @default(now())
+  releasedAt      DateTime?
+
+  @@index([householdId, createdAt])
+  @@map("reports")
 }

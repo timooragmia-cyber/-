@@ -162,7 +162,10 @@
     "savings": "חיסכון ארוך טווח",
     "calculations": "חישובים שמורים",
     "investments": "השקעות",
-    "routes": "השוואת מסלולים"
+    "routes": "השוואת מסלולים",
+    "debt": "משכנתא וחובות",
+    "plan": "תוכנית פעולה",
+    "reports": "דוחות"
   },
   "form": {
     "save": "שמירה",
@@ -1108,5 +1111,222 @@
     },
     "assumptions": "תשואות צפויות הן הנחות של היועץ ממסך התצורה (לא תחזית), אינפלציה {inflation}. המס לפי כללי המס בתוקף היום.",
     "notAdvice": "ניתוח לבדיקת היועץ — אינו המלצת השקעה ואינו מוצג ללקוח לפני אישור."
+  },
+  "debt": {
+    "mortgages": "משכנתאות",
+    "loans": "הלוואות וחובות",
+    "noMortgages": "אין משכנתאות.",
+    "noDebts": "אין חובות.",
+    "boi": "ריבית בנק ישראל {rate} · פריים {prime} (מ-{date})",
+    "source": "מקור",
+    "addMortgage": "הוספת משכנתא",
+    "addTrack": "הוספת מסלול",
+    "addLoan": "הוספת הלוואה",
+    "lender": "גוף מלווה",
+    "asOf": "נכון ל-",
+    "notes": "הערות",
+    "track": {
+      "type": "מסלול",
+      "method": "שיטת החזר",
+      "balance": "יתרה (₪)",
+      "remainingMonths": "חודשים שנותרו",
+      "annualRate": "ריבית שנתית (%)",
+      "monthsToReset": "חודשים עד שינוי ריבית"
+    },
+    "trackType": {
+      "PRIME": "פריים",
+      "FIXED_UNLINKED": "קבועה לא צמודה",
+      "FIXED_LINKED": "קבועה צמודה",
+      "VARIABLE_5_UNLINKED": "משתנה כל 5 לא צמודה",
+      "VARIABLE_5_LINKED": "משתנה כל 5 צמודה"
+    },
+    "methodName": {
+      "SPITZER": "שפיצר",
+      "EQUAL_PRINCIPAL": "קרן שווה"
+    },
+    "summary": {
+      "balance": "יתרה",
+      "firstPayment": "החזר חודשי נוכחי",
+      "maxPayment": "החזר מרבי",
+      "totalPaid": "סה\"כ תשלומים",
+      "totalInterest": "סה\"כ ריבית",
+      "totalIndexation": "סה\"כ הצמדה"
+    },
+    "scenario": {
+      "base": "בסיס",
+      "stress": "תרחיש לחץ",
+      "falling": "ירידת ריבית"
+    },
+    "scenarioNote": "בסיס: אינפלציה {infl}. לחץ: פריים +{stressPrime} אחרי {after} חודשים, אינפלציה {stressInfl}. ירידה: פריים {fallPrime}. הנחות ממסך התצורה.",
+    "loan": {
+      "kind": "סוג",
+      "label": "תיאור",
+      "balance": "יתרה (₪)",
+      "annualRate": "ריבית שנתית (%)",
+      "monthlyPayment": "החזר חודשי (₪)",
+      "remainingMonths": "חודשים שנותרו"
+    },
+    "loanKind": {
+      "CARD_CREDIT": "קרדיט בכרטיס",
+      "CONSUMER_LOAN": "הלוואה צרכנית",
+      "CAR_LOAN": "הלוואת רכב",
+      "OTHER": "אחר",
+      "OVERDRAFT": "מינוס בחשבון"
+    },
+    "ranking": "דירוג חובות לפי ריבית אפקטיבית",
+    "annualInterest": "ריבית שנתית",
+    "expensive": "יקר",
+    "thresholdMissing": "לא נקבע סף 'חוב יקר' במסך התצורה — הדירוג מוצג ללא סימון.",
+    "refinance": "סימולטור מחזור / פירעון מוקדם",
+    "newRate": "ריבית חדשה (%)",
+    "newMonths": "תקופה חדשה (חודשים, אופציונלי)",
+    "earlyFee": "עמלת פירעון מוקדם (הערכת הבנק, ₪)",
+    "openingCosts": "עלויות פתיחה (₪)",
+    "simulate": "חישוב",
+    "refi": {
+      "monthlyChange": "שינוי בהחזר החודשי",
+      "totalSaving": "חיסכון כולל",
+      "breakEven": "נקודת איזון",
+      "months": "{n} חודשים",
+      "never": "לא מגיע לאיזון",
+      "current": "נוכחי",
+      "proposed": "מוצע"
+    },
+    "optimizer": "אופטימיזציית תמהיל למשכנתא חדשה",
+    "amount": "סכום (₪)",
+    "months": "תקופה (חודשים)",
+    "ratesToday": "ריביות מוצעות היום לכל מסלול (%)",
+    "constraints": "מגבלות: לפחות {fixed} בקבועה, עד {variable} במשתנה (פרמטר — לאימות)",
+    "opt": {
+      "cheapest": "הזול ביותר (תרחיש בסיס)",
+      "safest": "ההחזר המרבי הנמוך ביותר (לחץ)",
+      "balanced": "מאוזן",
+      "baseTotal": "סה\"כ בבסיס",
+      "stressMax": "החזר מרבי בלחץ",
+      "fallingTotal": "סה\"כ בירידת ריבית",
+      "firstPayment": "החזר ראשון",
+      "evaluated": "{n} תמהילים נבדקו",
+      "none": "אין תמהיל שעומד במגבלות."
+    },
+    "consolidation": "סימולטור איחוד הלוואות",
+    "pick": "בחרו חובות לאיחוד",
+    "consRate": "ריבית ההלוואה החדשה (%)",
+    "consMonths": "תקופה (חודשים)",
+    "consFee": "עמלה (₪)",
+    "cons": {
+      "balance": "סכום ההלוואה החדשה",
+      "beforeMonthly": "החזר חודשי לפני",
+      "afterMonthly": "החזר חודשי אחרי",
+      "beforeTotal": "עלות שנותרה לפני",
+      "afterTotal": "עלות כוללת אחרי",
+      "totalChange": "שינוי בעלות הכוללת"
+    },
+    "disclaimer": "סימולציה לבדיקת היועץ; עמלות פירעון מוקדם בפועל נקבעות ע\"י הבנק."
+  },
+  "plan": {
+    "title": "תוכנית פעולה",
+    "regenerate": "עדכון המלצות מהנתונים",
+    "regenerated": "עודכנו {count} המלצות.",
+    "empty": "אין המלצות. לחצו על 'עדכון המלצות'.",
+    "help": "ההמלצות נוצרות מכללים קבועים לפי הסדר השמרני. רק המלצות שאושרו מוצגות ללקוח.",
+    "thresholdMissing": "לא נקבע סף 'חוב יקר' — המלצות על חובות יקרים לא ייווצרו עד שייקבע במסך התצורה.",
+    "impactMonthly": "השפעה חודשית",
+    "impactLifetime": "השפעה כוללת",
+    "status": {
+      "PROPOSED": "מוצע",
+      "APPROVED": "אושר",
+      "IN_PROGRESS": "בביצוע",
+      "DONE": "בוצע",
+      "DISMISSED": "נדחה"
+    },
+    "approve": "אישור",
+    "dismiss": "דחייה",
+    "reopen": "החזרה להצעה",
+    "up": "למעלה",
+    "down": "למטה",
+    "customTitle": "ניסוח שלכם (אופציונלי)",
+    "note": "הערת יועץ",
+    "save": "שמירה",
+    "rules": {
+      "EMERGENCY_FUND": {
+        "title": "לבנות קרן חירום של {target} חודשים",
+        "reason": "יש כיום כ-{months} חודשי הוצאות בנזילות. חסרים {gap}. הפקדה של {monthly} בחודש תשלים תוך כ-{monthsToGoal} חודשים."
+      },
+      "EXPENSIVE_DEBT": {
+        "title": "לסלק חוב יקר: {label}",
+        "reason": "יתרה {balance} בריבית {rate} — עולה כ-{yearly} בשנה."
+      },
+      "REDUCE_FEES": {
+        "title": "להוריד דמי ניהול: {label}",
+        "reason": "הורדה לרף תוסיף כ-{gain} לצבירה בפרישה (אופק {years} שנים)."
+      },
+      "CUT_LEAK": {
+        "title": "לבדוק ולבטל: {label}",
+        "reason": "חיוב קבוע שעולה {annual} בשנה."
+      },
+      "BANK_FEES": {
+        "title": "להוזיל עמלות וריביות בבנק",
+        "reason": "בממוצע {monthly} בחודש בעמלות וריבית בחשבון."
+      },
+      "AUTOMATE_SAVINGS": {
+        "title": "הוראת קבע לחיסכון: {amount} בחודש",
+        "reason": "חצי מהעודף החודשי הממוצע ({surplus}) — חיסכון אוטומטי בתחילת החודש."
+      },
+      "INVEST_SURPLUS": {
+        "title": "להשקיע עודף נזילות",
+        "reason": "{amount} מעבר לקרן החירום — במסלול המתאים לרמת הסיכון ({route})."
+      }
+    }
+  },
+  "reports": {
+    "title": "דוחות",
+    "generate": "הפקת דוח",
+    "type": "סוג",
+    "language": "שפה",
+    "period": "חודש",
+    "MONTHLY": "דוח חודשי",
+    "FULL_REVIEW": "סקירה פיננסית מלאה",
+    "generated": "הדוח הופק.",
+    "release": "שחרור ללקוח",
+    "released": "שוחרר ללקוח",
+    "notReleased": "לא שוחרר",
+    "download": "הורדה",
+    "none": "אין דוחות.",
+    "error": "הפקת הדוח נכשלה: {error}",
+    "pdf": {
+      "monthlyTitle": "דוח חודשי — {period}",
+      "fullTitle": "סקירה פיננסית מלאה",
+      "preparedFor": "הוכן עבור {name}",
+      "date": "תאריך הפקה: {date}",
+      "summary": "סיכום החודש",
+      "income": "הכנסות",
+      "expenses": "הוצאות",
+      "surplus": "עודף / גירעון",
+      "savingsRate": "שיעור חיסכון",
+      "vsLast": "שינוי מהחודש הקודם",
+      "noComparison": "אין חודש קודם להשוואה.",
+      "whereMoney": "לאן הלך הכסף",
+      "topActions": "שלוש הפעולות החשובות",
+      "noActions": "אין עדיין פעולות מאושרות.",
+      "feePotential": "פוטנציאל חיסכון בדמי ניהול עד הפרישה",
+      "trend": "מגמה ב-6 החודשים האחרונים",
+      "netWorth": "שווי נקי",
+      "longTerm": "חיסכון ארוך טווח",
+      "retirement": "תחזית פרישה (תרחיש בסיס)",
+      "debts": "חובות לפי ריבית",
+      "investments": "השקעות",
+      "plan": "תוכנית הפעולה",
+      "noData": "אין נתונים.",
+      "disclaimer": "המסמך מבוסס על נתונים שמסר הלקוח ועל הנחות שמוצגות בו. אינו מהווה ייעוץ מס או ייעוץ השקעות סופי. שיעורי מס, תקרות ותחזיות עשויים להשתנות ויש לאמתם מול המקורות הרשמיים.",
+      "page": "עמוד",
+      "of": "מתוך"
+    }
+  },
+  "portalPlan": {
+    "title": "תוכנית הפעולה שלכם",
+    "start": "התחלתי",
+    "done": "בוצע",
+    "reports": "דוחות",
+    "noReports": "אין דוחות."
   }
 }

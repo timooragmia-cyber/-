@@ -1,13 +1,13 @@
 # Unverified items (must be checked before relying on them)
 
-Updated: Phase 3b.
+Updated: Phase 4.
 
 | # | Item | Where | Status | Owner / when |
 |---|---|---|---|---|
 | 1 | Tax rates, brackets, thresholds | `tax_rules` | **Seeded UNVERIFIED** (14 rules) from secondary public sources, source URL + notes per row. Known conflicts flagged in notes: betterment 2001–2011 rate (20% vs 25%), money-market tax basis, qualifying-pension exemption (57% vs 57.5%), additional-apartment provision end date (set to 31.12.2026 so the calculator refuses after it). **MISSING on purpose**: disabled-buyer purchase tax, pension-deposit credit. Not supported: pre-1994 inflationary amount, Reg. 12 (old immigrant track) | Advisor verifies each rule on the configuration screen (source URL required) |
 | 2 | Management fee legal ceilings and market benchmarks per product | `fee_benchmarks` | **Seeded UNVERIFIED from secondary public sources** (URL + notes per row): pension 6%/0.5%, provident & managers' insurance 4%/1.05%, benchmarks from the 2024 default-fund tender and 2024 industry average. Study-fund ceiling and general-pension rows **empty** (conflicting / not researched). Investment provident fund ceiling assumed equal to provident fund | Advisor verifies each row on the configuration screen (source URL required) |
 | 3 | Advisory defaults | `advisory_parameters` | Emergency fund 3–6 months, grace days 10 and trend threshold 1% **confirmed by the advisor (2026-11-14)**. Health-score weights/targets, recurring-detection and highlight thresholds: **awaiting confirmation** on the configuration screen | Advisor |
-| 4 | "Expensive debt" interest threshold | `advisory_parameters` | Empty, advisor to set | Advisor |
+| 4 | "Expensive debt" interest threshold | `debt.expensive_threshold_ppm` | **Empty** — until set, debts are "unknown", no EXPENSIVE_DEBT actions are generated and INVEST_SURPLUS is blocked (conservative) | Advisor sets it on the configuration screen |
 | 5 | Privacy Protection Law, Amendment 13 obligations (database registration/notice duties, security regulations level, breach reporting, DPO need, retention) | Process + Phase 5 | Architecture supports consent, audit, export, purge, minimization. **Legal requirements not verified** | Advisor's legal counsel. Implementation in Phase 5 |
 | 6 | Consent text (`textVersion` "2026-01-draft") | `consents` | Placeholder version label. No legal text written yet | Legal counsel |
 | 7 | Bank/card export formats (Leumi, Hapoalim, Discount, Mizrahi-Tefahot, Isracard, Cal, Max) | `src/lib/import/presets.ts` | Presets are **unverified** (shown as such in the wizard). Header auto-detection + manual wizard handle any layout; tested only on fictional fixtures | Advisor to supply anonymized samples → presets get locked + tested |
@@ -26,3 +26,9 @@ Updated: Phase 3b.
 | 20 | Future exit taxes | Real estate exit at horizon | Assumes today's tax rules stay in force; CPI projected from expected inflation (both stated on screen) | By design; re-run when rules change |
 | 21 | Portfolio returns and tax | Portfolio | TWR approximated from monthly valuations; unrealized tax uses nominal gain (upper bound); no live prices | By design (manual monthly valuations) |
 | 22 | Study-fund route cap | Route comparison | ₪20,566/yr (self-employed exempt deposit cap, secondary source) — salaried employees differ | Advisor to verify |
+| 23 | Bank of Israel rate and prime spread | `rates.bank_of_israel` | 3.25% from 3.9.2026 + 1.5% spread (prime 4.75%), from a secondary source; the BOI site is blocked from the build environment | Advisor verifies after every rate decision |
+| 24 | Mortgage mix constraints | `mortgage.mix_constraints` | ≥ ⅓ fixed rate, ≤ ⅔ variable (Bank of Israel directive as commonly summarized) — not checked against the current directive text | Advisor |
+| 25 | Mortgage scenarios | `mortgage.scenarios` | Base inflation 2.5%; stress prime/resets +2% and inflation 4%; falling −1% and 2% — **advisor assumptions**, not forecasts | Advisor to confirm |
+| 26 | Early-repayment fee | Refinance simulator | Not computed — entered by the advisor from the bank's written quote (the official formula needs the bank's average rates on the repayment date) | By design |
+| 27 | Plan parameters | `plan.params` | Emergency-fund deposit = 50% of the average surplus; subscriptions flagged above ₪300/yr — advisory defaults awaiting confirmation | Advisor |
+| 28 | Docker image with Chromium | `Dockerfile` | Debian `chromium` added to the runtime image (`CHROMIUM_PATH`). **Image build not tested here** (no Docker daemon in the build environment); PDF rendering was tested with Playwright's Chromium | Verify on the first deploy (generate one report) |
