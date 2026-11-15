@@ -38,6 +38,11 @@ sudo ufw default deny incoming && sudo ufw allow from <OFFICE_IP> to any port 22
 Create an A record, for example `app.ta-mortgages.co.il`, pointing to the server's IP.
 Caddy obtains and renews the TLS certificate automatically.
 
+> **Shortcut:** sections 1, 3, 4 and the cron part of 5.3 are automated by
+> `sudo bash deploy/install.sh` (idempotent), and checked by `sudo bash deploy/verify.sh`.
+> For AWS, start with `docs/AWS-SETUP.he.md`. The manual steps below describe exactly what the
+> script does.
+
 ## 3. Code and secrets
 
 ```bash
@@ -65,7 +70,7 @@ Fill in `.env`:
 ## 4. First start
 
 ```bash
-docker compose build
+docker compose --profile tools build
 docker compose run --rm migrate                 # database schema + protective triggers
 docker compose run --rm tools db:seed           # categories, config tables, tax rules, advisor login
 docker compose up -d                            # db, app, caddy

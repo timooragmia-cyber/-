@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.0.1] — Deployment rehearsal (2026-11-15)
+
+The full production stack was built and run with Docker (Compose + Caddy). That rehearsal found
+four defects that would have broken the first real deployment. All are fixed and covered by
+tests or CI.
+
+### Fixed
+- **The image did not build:** `prisma generate` (postinstall) needs `DATABASE_URL`. The build now gets a placeholder that exists only during the build step and never in the image.
+- **The build needed runtime secrets:** `next build` imported the DB client, which validated the secrets at import time. The client is now created on first use, so builds need no secrets.
+- **The whole project was traced into the server output,** including `storage/` (encrypted client files) and `backup.env`. Font loading is now scoped, only the needed files are shipped, and `.dockerignore` excludes secret files.
+- **Every client-file page returned 500 in the image:** `playwright-core` data files were not traced. The package is now shipped completely and loaded only when a PDF is generated. A crashed Chromium is restarted automatically.
+- **Mix optimizer is 17× faster** (6.6s → 0.4s for a 25-year mortgage). Identical results, checked against the full calculation.
+
+### Added
+- `deploy/install.sh`: a single-command, idempotent installation on Ubuntu 24.04.
+  - It installs Docker (official repository), log rotation, a firewall, secrets and the build.
+  - It then runs the migrations, the production seed, HTTPS, the cron jobs and the verification.
+- `deploy/verify.sh`: pass/fail check of the deployment.
+  - It covers configuration, the containers, HTTPS and headers, and closed ports.
+  - It renders a PDF inside the image, and checks the backups, cron, demo logins and the retention period.
+- `docs/AWS-SETUP.he.md`: step-by-step AWS (Tel Aviv region) guide in Hebrew. It comes with the backup IAM policy (no delete permission) and the S3 lifecycle (`deploy/aws/`).
+- Base images come from the AWS public mirror of the official images (no Docker Hub rate limits).
+- CI (GitHub Actions) runs:
+  - all tests, plus E2E against the standalone artifact;
+  - `npm audit` on production dependencies;
+  - Docker builds with a PDF render inside the image;
+  - non-root and no-secrets checks on the image;
+  - validation of the compose file and the shell scripts.
+- `E2E_STANDALONE=1` runs E2E against `.next/standalone/server.js`, the way Docker runs it.
+
 ## [1.0.0] — Phase 5: Security hardening, privacy rights, deployment (2026-11-14)
 
 ### Added

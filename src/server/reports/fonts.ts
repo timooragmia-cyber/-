@@ -17,7 +17,9 @@ export function fontCss(): Promise<string> {
     const faces = await Promise.all(
       files.map(async ([family, d, f]) => {
         // No silent fallback: a PDF without these fonts would show boxes instead of Hebrew/Arabic.
-        const data = (await readFile(path.join(d, f))).toString("base64");
+        // turbopackIgnore: without it Next traces the WHOLE project into the server output.
+        // The four font files are included explicitly via outputFileTracingIncludes.
+        const data = (await readFile(/* turbopackIgnore: true */ path.join(/* turbopackIgnore: true */ d, f))).toString("base64");
         return `@font-face{font-family:"${family}";font-weight:100 900;src:url(data:font/woff2;base64,${data}) format("woff2");}`;
       }),
     );

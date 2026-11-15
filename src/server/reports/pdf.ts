@@ -1,5 +1,5 @@
 import "server-only";
-import { chromium, type Browser } from "playwright-core";
+import type { Browser } from "playwright-core";
 
 /**
  * HTML → PDF in headless Chromium (correct Hebrew/Arabic shaping and RTL).
@@ -8,8 +8,21 @@ import { chromium, type Browser } from "playwright-core";
  */
 let browser: Promise<Browser> | undefined;
 
+/**
+ * Loaded lazily: pages that merely import the report actions never load Playwright.
+ * A crashed or failed browser is dropped so the next report starts a fresh one.
+ */
 function getBrowser(): Promise<Browser> {
-  browser ??= chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+  browser ??= import("playwright-core")
+    .then(({ chromium }) => chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ["--no-sandbox", "--disable-dev-shm-usage"] }))
+    .then((b) => {
+      b.on("disconnected", () => (browser = undefined));
+      return b;
+    })
+    .catch((e: unknown) => {
+      browser = undefined;
+      throw e;
+    });
   return browser;
 }
 

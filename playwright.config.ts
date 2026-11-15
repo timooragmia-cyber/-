@@ -15,10 +15,11 @@ export default defineConfig({
     { name: "mobile", use: { ...devices["Pixel 7"] } },
   ],
   webServer: {
-    command: `npx next start -p ${PORT}`,
+    // E2E_STANDALONE=1 runs the shipped artifact (.next/standalone/server.js, as in Docker).
+    command: process.env.E2E_STANDALONE ? `node scripts/run-standalone.mjs` : `npx next start -p ${PORT}`,
     url: `http://localhost:${PORT}/api/health`,
     reuseExistingServer: false,
-    env: { DATABASE_URL: TEST_DB },
+    env: { DATABASE_URL: TEST_DB, PORT: String(PORT) },
     timeout: 60_000,
   },
 });

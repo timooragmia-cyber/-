@@ -8,3 +8,12 @@ test-results
 playwright-report
 .git
 src/generated
+# secrets and sandbox files must never enter an image
+backup.env
+*.age.key
+age-key.txt
+.ccr-ca.crt
+# not needed in any image
+docs/screenshots
+tests
+coverage

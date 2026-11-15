@@ -1,0 +1,94 @@
+# Every push / PR: typecheck, lint, unit tests, production build, E2E (desktop + mobile),
+# then the real Docker images — including a PDF render inside the runtime image.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ta
+          POSTGRES_PASSWORD: ta_ci_pw
+          POSTGRES_DB: ta_platform_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ta -d ta_platform_test" --health-interval 5s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://ta:ta_ci_pw@localhost:5432/ta_platform_test?schema=public
+      E2E_DATABASE_URL: postgresql://ta:ta_ci_pw@localhost:5432/ta_platform_test?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Throwaway secrets for this run only
+        run: |
+          {
+            echo "FIELD_ENCRYPTION_KEYS=v1:$(openssl rand -base64 32)"
+            echo "BLIND_INDEX_KEY=$(openssl rand -base64 32)"
+            echo "UPLOAD_DIR=./storage/uploads"
+          } > .env
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - name: Production dependencies have no known vulnerabilities
+        run: npm audit --omit=dev --audit-level=moderate
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: E2E against the shipped standalone artifact (as in Docker)
+        run: E2E_STANDALONE=1 npx playwright test tests/e2e/phase0.spec.ts tests/e2e/phase4.spec.ts tests/e2e/phase5.spec.ts --project desktop --trace off
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7
+
+  docker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build runtime image (Next standalone + Chromium)
+        run: docker build --target runtime -t ta-app .
+      - name: PDF renders inside the runtime image (Hebrew + Arabic)
+        run: |
+          docker run --rm --entrypoint node ta-app -e '
+            const { chromium } = require("playwright-core");
+            chromium.launch({ executablePath: process.env.CHROMIUM_PATH, args: ["--no-sandbox", "--disable-dev-shm-usage"] })
+              .then(async (b) => { const p = await b.newPage(); await p.setContent("<p dir=rtl>שלום · مرحبا</p>");
+                const pdf = await p.pdf(); if (pdf.length < 1000) throw new Error("tiny pdf"); console.log("PDF OK", pdf.length); await b.close(); })
+              .catch((e) => { console.error(e); process.exit(1); });'
+      - name: Image runs as non-root and ships no source or secrets
+        run: |
+          test "$(docker run --rm --entrypoint id ta-app -u)" = 1001
+          docker run --rm --entrypoint sh ta-app -c 'test ! -e /app/src && test ! -e /app/.env && test ! -e /app/backup.env && test ! -e /app/tests'
+      - name: Build migrate/tools image
+        run: docker build --target migrate -t ta-migrate .
+      - name: Build backup image and check its tools
+        run: |
+          docker build -t ta-backup deploy/backup
+          docker run --rm ta-backup -c 'pg_dump --version && age --version && aws --version'
+      - name: Compose file is valid
+        run: |
+          printf 'POSTGRES_PASSWORD=x\nDOMAIN=example.test\nACME_EMAIL=ops@example.test\n' > ci.env && touch backup.env
+          docker compose --env-file ci.env --profile tools config -q
+      - name: Shell scripts parse
+        run: for f in deploy/*.sh deploy/backup/*.sh; do bash -n "$f"; done

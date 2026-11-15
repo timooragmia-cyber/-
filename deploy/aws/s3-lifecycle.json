@@ -1,0 +1,12 @@
+{
+  "Rules": [
+    {
+      "ID": "ta-backups-35-days",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "ta-platform/" },
+      "Expiration": { "Days": 35 },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 1 },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 2 }
+    }
+  ]
+}

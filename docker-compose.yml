@@ -4,7 +4,7 @@ name: ta-platform
 
 services:
   db:
-    image: postgres:16
+    image: public.ecr.aws/docker/library/postgres:16
     restart: unless-stopped
     environment:
       POSTGRES_USER: ta
@@ -33,7 +33,7 @@ services:
     # which is safe only because nothing else can connect to it.
 
   caddy:
-    image: caddy:2.10.0
+    image: public.ecr.aws/docker/library/caddy:2.10.0
     restart: unless-stopped
     ports:
       - "80:80"

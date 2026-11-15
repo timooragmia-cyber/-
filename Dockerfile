@@ -1,17 +1,21 @@
 # Multi-stage build → small runtime image running as non-root.
-FROM node:22-bookworm-slim AS deps
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json prisma.config.ts ./
 COPY prisma ./prisma
-RUN npm ci
+# prisma.config.ts requires DATABASE_URL even for `prisma generate` (postinstall). A placeholder
+# is passed to these build steps only: it is never stored in the image and never connected to.
+ARG BUILD_DATABASE_URL=postgresql://build:build@localhost:5432/build
+RUN DATABASE_URL="$BUILD_DATABASE_URL" npm ci
 
-FROM node:22-bookworm-slim AS build
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npx prisma generate && npm run build
+ARG BUILD_DATABASE_URL=postgresql://build:build@localhost:5432/build
+RUN DATABASE_URL="$BUILD_DATABASE_URL" npx prisma generate && DATABASE_URL="$BUILD_DATABASE_URL" npm run build
 
-FROM node:22-bookworm-slim AS runtime
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1
 # Chromium renders the PDF reports (src/server/reports/pdf.ts). Fonts are embedded in the

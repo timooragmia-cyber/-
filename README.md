@@ -26,6 +26,7 @@ Demo logins (fictional): `advisor@example.test`, and the clients `samer.demo@exa
 |---|---|
 | `npm run dev` / `build` / `start` | Next.js |
 | `npm test` | Vitest unit tests (all calculation logic) |
+| `E2E_STANDALONE=1 npm run test:e2e` | E2E against the shipped standalone server (as in Docker) |
 | `npm run test:e2e` | Playwright on desktop + mobile against `ta_platform_test` (reset and seeded automatically; refuses any DB without `_test` in its name) |
 | `npm run typecheck` / `lint` | TypeScript strict / ESLint |
 | `npm run db:migrate` / `db:deploy` / `db:seed` | Prisma |
@@ -33,7 +34,11 @@ Demo logins (fictional): `advisor@example.test`, and the clients `samer.demo@exa
 
 ## Production
 
-Docker Compose on one VM: Caddy (TLS) → app → PostgreSQL, nightly encrypted backups, daily privacy purge. Follow **`docs/DEPLOYMENT.md`** step by step.
+Docker Compose on one VM: Caddy (TLS) → app → PostgreSQL, nightly encrypted backups, daily privacy purge.
+
+- AWS (Tel Aviv) step by step, in Hebrew: **`docs/AWS-SETUP.he.md`**
+- On the server: `sudo bash deploy/install.sh` (installs everything), then `sudo bash deploy/verify.sh` (pass/fail check)
+- Operations (backups, restore drill, updates, keys): `docs/DEPLOYMENT.md`
 
 ## Non-negotiable conventions
 
@@ -52,6 +57,7 @@ Two fictional statement files live in `tests/fixtures/` (a bank CSV with title r
 
 - `docs/ARCHITECTURE.md` — design, security model, folder structure
 - `docs/ERD.md` — data model and planned entities per phase
+- `docs/AWS-SETUP.he.md` — AWS server, DNS and backup bucket, step by step (Hebrew)
 - `docs/DEPLOYMENT.md` — installation, backups and restore drill, updates, keys, monitoring
 - `docs/PRIVACY.md` — Amendment 13 readiness: technical measures, office obligations, request runbook
 - `docs/UNVERIFIED.md` — what is not verified yet and who owns it

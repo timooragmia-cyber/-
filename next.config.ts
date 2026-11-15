@@ -21,7 +21,16 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
-  serverExternalPackages: ["@node-rs/argon2", "exceljs"],
+  serverExternalPackages: ["@node-rs/argon2", "exceljs", "playwright-core"],
+  // PDF fonts are read at runtime (src/server/reports/fonts.ts); ship exactly these files.
+  outputFileTracingIncludes: {
+    "/**": [
+      "./node_modules/@fontsource-variable/noto-sans-hebrew/files/noto-sans-hebrew-{hebrew,latin}-wght-normal.woff2",
+      "./node_modules/@fontsource-variable/noto-sans-arabic/files/noto-sans-arabic-{arabic,latin}-wght-normal.woff2",
+      // Playwright reads data files (browsers.json, …) at runtime that tracing does not see.
+      "./node_modules/playwright-core/**",
+    ],
+  },
   experimental: {
     // Statement uploads go through server actions; files are capped at 10MB in code (adapters.ts).
     serverActions: { bodySizeLimit: "11mb" },

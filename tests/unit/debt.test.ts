@@ -69,6 +69,27 @@ describe("refinance, mix, debts", () => {
     expect(r.safest.stressMax <= r.cheapest.stressMax).toBe(true);
     expect(r.cheapest.baseTotal <= r.safest.baseTotal).toBe(true);
   });
+  it("optimizer fast path equals the full mortgageSchedule() for its picks, and is fast", () => {
+    const rates = { PRIME: 47_500, FIXED_UNLINKED: 50_000, FIXED_LINKED: 35_000, VARIABLE_5_UNLINKED: 46_000, VARIABLE_5_LINKED: 34_000 };
+    const sc = {
+      base: { ...BASE_SCENARIO, inflationPpm: 25_000 },
+      stress: { primeDeltaPpm: 20_000, primeChangeAfter: 12, resetDeltaPpm: 20_000, inflationPpm: 40_000 },
+      falling: { primeDeltaPpm: -10_000, primeChangeAfter: 12, resetDeltaPpm: -10_000, inflationPpm: 20_000 },
+    };
+    const t0 = performance.now();
+    const r = optimizeMix(sh(1_000_000), 300, rates, { minFixedPpm: 333_333, maxVariablePpm: 666_667 }, sc)!;
+    expect(performance.now() - t0).toBeLessThan(3_000);
+    const types = ["PRIME", "FIXED_UNLINKED", "FIXED_LINKED", "VARIABLE_5_UNLINKED"] as const;
+    for (const pick of [r.cheapest, r.safest, r.balanced]) {
+      const tracks = types
+        .map((type) => ({ type, balance: (sh(1_000_000) * BigInt(pick.mix[type]! / 100_000) + 5n) / 10n, remainingMonths: 300, annualRatePpm: rates[type], method: "SPITZER" as const }))
+        .filter((t) => t.balance > 0n);
+      expect(pick.baseTotal).toBe(mortgageSchedule(tracks, sc.base).totalPaid);
+      expect(pick.stressMax).toBe(mortgageSchedule(tracks, sc.stress).maxPayment);
+      expect(pick.fallingTotal).toBe(mortgageSchedule(tracks, sc.falling).totalPaid);
+      expect(pick.firstPayment).toBe(mortgageSchedule(tracks, sc.base).firstPayment);
+    }
+  });
   const debts: Debt[] = [
     { id: "car", label: "רכב", kind: "CAR_LOAN", balance: sh(40_000), annualRatePpm: 69_000, monthlyPayment: sh(1_350), remainingMonths: 32 },
     { id: "od", label: "מינוס", kind: "OVERDRAFT", balance: sh(11_800), annualRatePpm: 129_000, monthlyPayment: 0n, remainingMonths: null },
