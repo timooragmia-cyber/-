@@ -18,7 +18,10 @@ export function assertHouseholdAccess(user: GuardUser, householdId: string): voi
   if (!canAccessHousehold(user, householdId)) throw new ForbiddenError();
 }
 
-/** ADVISOR: 2FA mandatory. CLIENT: 2FA when they enabled it. */
-export function requiresSecondFactor(role: GuardUser["role"], totpEnabled: boolean): boolean {
-  return role === "ADVISOR" || totpEnabled;
+/**
+ * ADVISOR: 2FA mandatory on the server edition; on the desktop edition (one computer, no
+ * network exposure) it is optional. CLIENT: 2FA when they enabled it. Enabled = always asked.
+ */
+export function requiresSecondFactor(role: GuardUser["role"], totpEnabled: boolean, advisorMandatory = true): boolean {
+  return (role === "ADVISOR" && advisorMandatory) || totpEnabled;
 }

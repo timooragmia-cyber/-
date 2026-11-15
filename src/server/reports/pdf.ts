@@ -26,7 +26,12 @@ function getBrowser(): Promise<Browser> {
   return browser;
 }
 
+/** Desktop edition: the Electron shell renders with its own Chromium (no Playwright needed). */
+type DesktopPdf = (html: string, footer: { left: string; right: string }) => Promise<Uint8Array>;
+
 export async function htmlToPdf(html: string, footer: { left: string; right: string }): Promise<Uint8Array> {
+  const desktop = (globalThis as { __taDesktopPdf?: DesktopPdf }).__taDesktopPdf;
+  if (desktop) return desktop(html, footer);
   const b = await getBrowser();
   const ctx = await b.newContext({ javaScriptEnabled: false });
   try {

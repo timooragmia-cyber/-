@@ -8,7 +8,8 @@ import { buildCsp, newNonce } from "@/lib/security/csp";
  *    (session validity, 2FA, role, household ownership, privacy restriction) happens in the
  *    DAL on every page/action (src/server/auth/dal.ts). Never rely on this file for security.
  */
-const PUBLIC = ["/login", "/api/health"];
+// /api/desktop/*: desktop edition only, authenticated by a per-launch token inside the route.
+const PUBLIC = ["/login", "/api/health", "/api/desktop"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

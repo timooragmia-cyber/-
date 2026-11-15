@@ -17,7 +17,8 @@ const walk = (dir: string): string[] =>
 const files = walk(root).filter((f) => /\.(ts|tsx)$/.test(f) && !f.includes(`${path.sep}generated${path.sep}`));
 const rel = (f: string) => path.relative(root, f).split(path.sep).join("/");
 const AUTH = /\b(requireAdvisor|requireClient|requireUser|requireOpenHousehold|getCurrentUserOrNull|getPartialUser)\(/;
-const PUBLIC = new Set(["app/api/health/route.ts", "app/(auth)/login/page.tsx"]);
+// The desktop maintenance route authenticates with a per-launch token (timing-safe), not a session.
+const PUBLIC = new Set(["app/api/health/route.ts", "app/(auth)/login/page.tsx", "app/api/desktop/maintenance/route.ts"]);
 
 describe("authorization coverage", () => {
   it("every page and route handler outside /login authenticates", () => {

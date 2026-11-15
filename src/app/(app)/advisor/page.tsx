@@ -9,6 +9,7 @@ import { requireAdvisor } from "@/server/auth/dal";
 import { listHouseholdsForAdvisor } from "@/server/households";
 import { db } from "@/server/db";
 import { openPrivacyRequests } from "@/server/privacy/service";
+import { desktopBackupStatus } from "@/server/desktop";
 
 export default async function AdvisorDashboard() {
   const user = await requireAdvisor();
@@ -47,6 +48,20 @@ export default async function AdvisorDashboard() {
           </Card>
         ))}
       </div>
+      {(() => {
+        // Desktop edition: the data lives on this computer only — a missing or stale backup is
+        // the biggest risk, so it is the first thing on the dashboard.
+        const b = desktopBackupStatus();
+        if (!b) return null;
+        const stale = !b.lastBackupAt || now.getTime() - new Date(b.lastBackupAt).getTime() > 3 * 86_400_000;
+        if (b.configured && !stale && !b.lastBackupError) return null;
+        return (
+          <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-bad bg-bad-bg p-3 text-sm text-bad">
+            <span>{!b.configured ? tAll("backup.bannerNotSet") : b.lastBackupError ? tAll("backup.bannerError") : tAll("backup.bannerStale")}</span>
+            <Link href="/advisor/backup" className="rounded-md bg-bad px-3 py-1.5 font-medium text-white">{tAll("backup.bannerCta")}</Link>
+          </div>
+        );
+      })()}
       {requests.length > 0 && (
         <Card>
           <h2 className="mb-2 font-semibold">{tAll("privacy.openRequests")}</h2>

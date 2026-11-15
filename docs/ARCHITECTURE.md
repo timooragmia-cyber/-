@@ -136,6 +136,18 @@ The adapter interface (`ImportAdapter` in `src/lib/import/types.ts`) is `canHand
 - **Code:** pure date logic is in `src/lib/privacy/*`; the service (export ZIP, requests, restrict, lift, purge) is `src/server/privacy/service.ts`.
 - **Purge:** runs in one transaction with `SET LOCAL app.allow_snapshot_purge = 'on'`, then deletes the files. Details: `docs/PRIVACY.md`.
 
+## 6f. Desktop edition (1.1.0)
+
+- `desktop/` (Electron) runs the **same Next.js server** in-process on 127.0.0.1. `TA_DESKTOP=1` switches:
+  - advisor 2FA becomes optional;
+  - client logins are disabled;
+  - the backup screen is enabled;
+  - PDFs are rendered via `globalThis.__taDesktopPdf` (Electron `printToPDF`).
+- PostgreSQL 16 binaries (`@embedded-postgres/*`) are managed with `pg_ctl`.
+- Migrations: `desktop/src/core/migrate.ts`, compatible with `_prisma_migrations`.
+- Backup and restore: `desktop/src/core/backup.ts`. It uses COPY under REPEATABLE READ, plus files and keys, encrypted with AES-256-GCM using a scrypt-derived key. Restore runs with `session_replication_role = replica`, then the sequences are restored.
+- The renderer is sandboxed (contextIsolation, no Node). The preload exposes only the backup and setup calls. IPC is accepted only from the app's own origin.
+
 ## 7. Deployment
 
 - `docker compose` runs `db`, `app` and `caddy`, plus on-demand `migrate`, `tools` and `backup`. Only Caddy publishes ports.

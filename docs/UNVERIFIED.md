@@ -1,6 +1,6 @@
 # Unverified items (must be checked before relying on them)
 
-Updated: Phase 5 (release 1.0.0).
+Updated: 1.1.0 (Windows desktop edition).
 
 | # | Item | Where | Status | Owner / when |
 |---|---|---|---|---|
@@ -37,3 +37,7 @@ Updated: Phase 5 (release 1.0.0).
 | 31 | Breach notification deadline / process | `docs/PRIVACY.md` | Secondary sources mention 72 hours to the Privacy Protection Authority; not confirmed. No in-app breach workflow | Legal counsel; office procedure |
 | 32 | Client 2FA | Portal | Optional with a persistent prompt (advisor's decision). No in-app reset flow — the advisor resets via SQL (`docs/DEPLOYMENT.md` §8) | Revisit if client adoption is low |
 | 33 | Dev-tooling advisories | `npm audit` | 8 moderate advisories in ESLint/typescript-eslint (development only, not in the image). Production tree: 0 | Update tooling when fixed upstream |
+| 34 | Desktop edition on a real Windows PC | `desktop/` | Built as a Windows installer from Linux (Wine); Windows PostgreSQL binaries load (`initdb 16.15`). The full program test passes on **Linux**. Not yet run on a real Windows machine (the CI job `desktop-windows` does it once GitHub is connected) | First install by the advisor: follow `docs/WINDOWS-INSTALL.he.md`, send `app.log` if anything fails |
+| 35 | Installer not code-signed | `desktop/electron-builder.yml` | Windows SmartScreen shows "Windows protected your PC" (More info → Run anyway). A code-signing certificate (~$200–400/yr, OV/EV) removes it | Advisor decision |
+| 36 | Microsoft Visual C++ runtime | Installer | Needed by PostgreSQL. If missing, the installer downloads it from Microsoft (one-time internet). Not bundled (Microsoft's download host is blocked in the build environment) | First install |
+| 37 | Desktop data protection | `%APPDATA%\T.A Mortgages` | Secrets sealed with Windows DPAPI; database files themselves rely on **disk encryption (BitLocker/Device Encryption)** — the guide asks the advisor to enable it | Advisor |

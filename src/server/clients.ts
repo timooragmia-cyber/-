@@ -1,4 +1,5 @@
 import "server-only";
+import { isDesktop } from "@/server/desktop";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { audit } from "@/server/audit";
@@ -173,6 +174,8 @@ export const clientLoginSchema = z.object({
 
 /** Creates a client login with a one-time temporary password the client must change at first login. */
 export async function createClientLogin(user: CurrentUser, householdId: string, input: z.infer<typeof clientLoginSchema>) {
+  // Desktop edition: one computer, no client portal — client logins do not exist.
+  if (isDesktop()) throw new Error("Client logins are not available in the desktop edition");
   advisorOnly(user);
   const person = await db.person.findFirstOrThrow({ where: { id: input.personId, householdId } });
   const temp = randomBytes(9).toString("base64url");

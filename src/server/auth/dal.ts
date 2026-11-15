@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { db } from "@/server/db";
+import { isDesktop } from "@/server/desktop";
 import { assertHouseholdAccess as assertTenant, type GuardUser, requiresSecondFactor } from "./dal-guards";
 import { getSession } from "./session";
 
@@ -52,8 +53,8 @@ export async function getCurrentUserOrNull(): Promise<CurrentUser | null> {
   const state = await getAuthState();
   if (!state) return null;
   const { user } = state;
-  if (user.role === "ADVISOR" && !user.totpEnabled) return null;
-  if (requiresSecondFactor(user.role, user.totpEnabled) && !state.secondFactorDone) return null;
+  if (user.role === "ADVISOR" && !user.totpEnabled && !isDesktop()) return null;
+  if (requiresSecondFactor(user.role, user.totpEnabled, !isDesktop()) && !state.secondFactorDone) return null;
   if (user.mustChangePassword) return null;
   return user;
 }
@@ -71,8 +72,8 @@ export async function requireUser(opts: { allowPasswordChangePending?: boolean }
   const state = await getAuthState();
   if (!state) redirect("/login");
   const { user } = state;
-  if (user.role === "ADVISOR" && !user.totpEnabled) redirect("/login/setup-2fa");
-  if (requiresSecondFactor(user.role, user.totpEnabled) && !state.secondFactorDone) redirect("/login/2fa");
+  if (user.role === "ADVISOR" && !user.totpEnabled && !isDesktop()) redirect("/login/setup-2fa");
+  if (requiresSecondFactor(user.role, user.totpEnabled, !isDesktop()) && !state.secondFactorDone) redirect("/login/2fa");
   if (user.mustChangePassword && !opts.allowPasswordChangePending) redirect("/account/password");
   return user;
 }

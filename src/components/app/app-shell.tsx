@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { logoutAction } from "@/app/(auth)/login/actions";
 import type { CurrentUser } from "@/server/auth/dal";
+import { isDesktop } from "@/server/desktop";
 
 export async function AppShell({ user, children }: { user: CurrentUser; children: React.ReactNode }) {
   const t = await getTranslations();
@@ -11,6 +12,7 @@ export async function AppShell({ user, children }: { user: CurrentUser; children
           { href: "/advisor", label: t("nav.dashboard") },
           { href: "/advisor/tax", label: t("nav.tax") },
           { href: "/advisor/config", label: t("nav.config") },
+          ...(isDesktop() ? [{ href: "/advisor/backup", label: t("nav.backup") }] : []),
           { href: "/account", label: t("nav.account") },
         ]
       : [

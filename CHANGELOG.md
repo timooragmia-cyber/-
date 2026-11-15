@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.1.0] — Windows desktop edition (2026-11-15)
+
+The advisor runs the program on one Windows computer, with no internet and no client portal.
+The web/server edition is unchanged and still supported.
+
+### Added
+- **Windows program** (`desktop/`, Electron): an installer (`TA-Mortgages-Setup-1.1.0.exe`) with a Hebrew UI, a desktop shortcut and a per-machine install.
+  - The data lives in `%APPDATA%\T.A Mortgages` and is never removed by uninstall.
+- **Private PostgreSQL 16** on 127.0.0.1, driven by `pg_ctl`/`initdb`: works under administrator accounts and shuts down cleanly (never a forced kill).
+  - After a crash, the program reuses the database server that was left running.
+- **Migrations** applied by the program itself (compatible with Prisma's table).
+  - Before an update's migrations, a safety backup is taken automatically.
+  - Reference data is refreshed per version.
+- **First-run setup:** advisor e-mail and password, plus optional demo data.
+- **Encrypted backups:** a consistent snapshot of all tables, the files and the keys, sealed with AES-256-GCM under a password (scrypt).
+  - Automatic, daily and on exit, to a folder of the user's choice; the newest 30 are kept.
+  - Restore from the program, with a safety copy of the current state first.
+- **Secrets** are sealed with Windows DPAPI (Electron safeStorage).
+- **PDF reports** are rendered with Electron's own Chromium (JavaScript off, network blocked).
+- **Desktop-mode rules:**
+  - Advisor 2FA is optional.
+  - No client logins.
+  - A backup screen, and a dashboard warning when backup is missing or stale.
+  - Daily privacy purge at startup.
+- **Tests:**
+  - A core integration test on a real PostgreSQL: init, migrate, seed, backup, wipe, restore, then triggers and sequences checked.
+  - A full program test (Electron): setup, login, PDF, backup, clean exit, restart, restore with wrong and right password. It passes with a read-only install folder.
+  - A CI job runs both on a real Windows machine and builds the installer.
+- `docs/WINDOWS-INSTALL.he.md`: install and daily-use guide in Hebrew.
+
+### Fixed during build
+- The setup window's close event quit the app after a successful setup.
+- The moment with zero windows between the splash and the main window quit the app.
+- The sandboxed preload crashed because of a bundler banner.
+- The seed's console output (generated demo passwords) is no longer written to the log.
+
 ## [1.0.1] — Deployment rehearsal (2026-11-15)
 
 The full production stack was built and run with Docker (Compose + Caddy). That rehearsal found

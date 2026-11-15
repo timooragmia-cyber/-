@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Desktop shell: its own package, type-checked with desktop/tsconfig.json (strict).
+    "desktop/**",
   ]),
 ]);
 

@@ -1,0 +1,47 @@
+appId: com.tamortgages.desktop
+productName: T.A Mortgages
+copyright: T.A Mortgages
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/main.js
+  - dist/preload.js
+  - dist/setup.html
+  - dist/setup.js
+  - dist/splash.html
+  - package.json
+# Everything the app needs at run time beside its own code, outside the asar archive:
+extraResources:
+  - from: stage/server
+    to: server
+  - from: stage/pg
+    to: pg
+  - from: stage/migrations
+    to: migrations
+  - from: stage/seed.js
+    to: seed.js
+asar: true
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+  executableName: TA-Mortgages
+nsis:
+  oneClick: false
+  perMachine: true
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: T.A Mortgages
+  installerLanguages: [he_IL]
+  language: "1037"
+  include: build/installer.nsh
+  # Client data lives in %APPDATA%\T.A Mortgages and is NEVER removed by uninstall.
+  deleteAppDataOnUninstall: false
+  artifactName: TA-Mortgages-Setup-${version}.exe
+
+# No auto-update server: updates are installed by running a newer installer.
+publish: null

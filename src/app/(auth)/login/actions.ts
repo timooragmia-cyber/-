@@ -12,6 +12,7 @@ import { generateRecoveryCodes, verifyTotp } from "@/server/auth/totp";
 import { decrypt } from "@/server/crypto";
 import { db } from "@/server/db";
 import { rateLimit, resetRateLimit } from "@/server/rate-limit";
+import { isDesktop } from "@/server/desktop";
 import { LOCALE_COOKIE } from "@/i18n/config";
 
 const MAX_FAILED = 5;
@@ -67,12 +68,12 @@ export async function loginAction(_prev: FormState, form: FormData): Promise<For
   resetRateLimit(`login:email:${email}`);
   // Kill any previous session cookie (fixation) before issuing a new one.
   await destroySession();
-  const needs2fa = requiresSecondFactor(user.role, user.totpEnabledAt !== null);
+  const needs2fa = requiresSecondFactor(user.role, user.totpEnabledAt !== null, !isDesktop());
   await createSession(user.id, !needs2fa);
   (await cookies()).set(LOCALE_COOKIE, user.locale, { path: "/", sameSite: "lax", maxAge: 60 * 60 * 24 * 365 });
   await audit({ action: "LOGIN_SUCCESS", actorUserId: user.id, actorRole: user.role, metadata: { secondFactorPending: needs2fa } });
 
-  if (user.role === "ADVISOR" && !user.totpEnabledAt) redirect("/login/setup-2fa");
+  if (user.role === "ADVISOR" && !user.totpEnabledAt && !isDesktop()) redirect("/login/setup-2fa");
   if (needs2fa) redirect("/login/2fa");
   redirect(homeFor(user.role));
 }

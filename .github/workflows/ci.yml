@@ -92,3 +92,38 @@ jobs:
           docker compose --env-file ci.env --profile tools config -q
       - name: Shell scripts parse
         run: for f in deploy/*.sh deploy/backup/*.sh; do bash -n "$f"; done
+
+  # Desktop edition on a real Windows machine: core test (PostgreSQL via pg_ctl), the full
+  # program test (Electron), then the installer as a downloadable artifact.
+  desktop-windows:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build the app (no secrets needed)
+        run: npm run build
+      - name: Desktop dependencies
+        working-directory: desktop
+        run: npm ci
+      - name: Assemble for Windows
+        working-directory: desktop
+        run: npm run stage:win
+      - name: Core test (embedded PostgreSQL, migrations, seed, backup/restore)
+        working-directory: desktop
+        run: node --test dist/core.test.js
+      - name: Program test (setup, login, PDF, backup, restart, restore)
+        working-directory: desktop
+        run: node e2e.test.mjs
+      - name: Build installer
+        working-directory: desktop
+        run: npx electron-builder --win --x64 --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: desktop/release/*.exe
+          retention-days: 30

@@ -32,7 +32,15 @@ Demo logins (fictional): `advisor@example.test`, and the clients `samer.demo@exa
 | `npm run db:migrate` / `db:deploy` / `db:seed` | Prisma |
 | `npm run privacy:purge` (`-- --dry-run`) | Purge restricted households whose retention period ended (daily cron in production) |
 
-## Production
+## Windows desktop edition (one computer, no internet)
+
+- Install guide (Hebrew): **`docs/WINDOWS-INSTALL.he.md`**
+- Build the installer: `npm run build` (repo root), then in `desktop/`: `npm ci && npm run dist:win` → `desktop/release/TA-Mortgages-Setup-<version>.exe`
+- Tests:
+  - Core: `npm run test:core`
+  - Full program: `xvfb-run node e2e.test.mjs` (Linux, as a non-root user), or CI job `desktop-windows`
+
+## Production (web / server edition)
 
 Docker Compose on one VM: Caddy (TLS) → app → PostgreSQL, nightly encrypted backups, daily privacy purge.
 

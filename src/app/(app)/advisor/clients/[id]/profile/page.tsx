@@ -10,6 +10,7 @@ import { formatMoney, type MoneyLocale } from "@/lib/money";
 import { requireAdvisor, requireOpenHousehold } from "@/server/auth/dal";
 import { db } from "@/server/db";
 import { getHouseholdProfile } from "@/server/households";
+import { isDesktop } from "@/server/desktop";
 import * as A from "../actions";
 
 function DeleteRow({ householdId, kind, rowId, label }: { householdId: string; kind: string; rowId: string; label: string }) {
@@ -186,7 +187,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
         </details>
       </Card>
 
-      <Card>
+      {!isDesktop() && <Card>
         <CardTitle>{t("profile.clientLogin")}</CardTitle>
         {logins.length === 0 ? (
           <p className="mb-3 text-sm text-muted">{t("profile.noLogins")}</p>
@@ -207,7 +208,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
             </Field>
           </div>
         </ActionForm>
-      </Card>
+      </Card>}
     </div>
   );
 }

@@ -288,7 +288,8 @@ async function seedDemo(advisorId: string) {
 
     for (const body of d.notes) await db.advisorNote.create({ data: { householdId: h.id, body, createdByUserId: advisorId, period: "2026-10" } });
     for (const title of d.tasks) await db.actionItem.create({ data: { householdId: h.id, title, createdByUserId: advisorId, period: "2026-10" } });
-    if (d.clientLogin) {
+    // Desktop edition has no client portal: SEED_CLIENT_LOGINS=false skips demo client logins.
+    if (d.clientLogin && process.env.SEED_CLIENT_LOGINS !== "false") {
       const primary = h.members.find((m) => m.memberRole === "PRIMARY");
       await db.user.create({
         data: {
