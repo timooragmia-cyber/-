@@ -1,0 +1,54 @@
+# Builds the Windows installer on a real Windows machine, runs the program tests, and publishes
+# it as a GitHub Release (a normal download page). Runs on a version tag (desktop-v1.1.0) or
+# by hand from the Actions tab.
+name: Desktop release
+
+on:
+  push:
+    tags: ["desktop-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows-installer:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Desktop dependencies
+        working-directory: desktop
+        run: npm ci
+      - name: Assemble for Windows
+        working-directory: desktop
+        run: npm run stage:win
+      - name: Core test (PostgreSQL, migrations, seed, backup/restore)
+        working-directory: desktop
+        run: node --test dist/core.test.js
+      - name: Program test (setup, login, PDF, backup, restart, restore)
+        working-directory: desktop
+        run: node e2e.test.mjs
+      - name: Build installer
+        working-directory: desktop
+        run: npx electron-builder --win --x64 --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: desktop/release/*.exe
+          retention-days: 30
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: T.A Mortgages ${{ github.ref_name }}
+          body: |
+            קובץ ההתקנה ל-Windows. הורידו את TA-Mortgages-Setup-*.exe ופתחו בלחיצה כפולה.
+            המדריך המלא: docs/WINDOWS-INSTALL.he.md
+          files: desktop/release/*.exe
