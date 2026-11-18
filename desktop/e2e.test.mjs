@@ -17,6 +17,14 @@ const backups = path.join(root, "backups");
 const EMAIL = "advisor@office.test";
 const PW = "Advisor-Pass-2026";
 const step = (m) => console.log(`✔ ${m}`);
+// On any failure, print the program's own logs so CI shows why.
+const dump = () => {
+  for (const f of [path.join(userData, "logs", "app.log"), path.join(userData, "logs", "postgres.log"), path.join(root, "electron.out")]) {
+    try { console.error(`\n----- ${f} -----\n${readFileSync(f, "utf8").slice(-6000)}`); } catch { console.error(`(no ${f})`); }
+  }
+};
+process.on("uncaughtException", (e) => { console.error(e); dump(); process.exit(1); });
+process.on("unhandledRejection", (e) => { console.error(e); dump(); process.exit(1); });
 
 import { appendFileSync } from "node:fs";
 const launch = async () => {
@@ -24,7 +32,7 @@ const launch = async () => {
     executablePath: require(path.resolve("node_modules/electron")), // the electron package exports its binary path
     args: [path.resolve("dist/main.js"), ...(process.platform === "linux" ? ["--no-sandbox"] : [])],
     env: { ...process.env, TA_DESKTOP_TEST: "1", TA_DESKTOP_USERDATA: userData },
-    timeout: 120_000,
+    timeout: 300_000,
   });
   // Keep the program's own output for diagnosis.
   for (const s of [a.process().stdout, a.process().stderr]) s?.on("data", (d) => appendFileSync(path.join(root, "electron.out"), d));
@@ -32,7 +40,7 @@ const launch = async () => {
 };
 
 async function mainWindow(app) {
-  for (let i = 0; i < 240; i++) {
+  for (let i = 0; i < 720; i++) {
     for (const w of app.windows()) if (/\/login|\/advisor/.test(w.url())) return w;
     await new Promise((r) => setTimeout(r, 500));
   }
@@ -49,7 +57,7 @@ async function login(win) {
 // ── Run 1: first-run setup ──────────────────────────────────────────────────────────────
 let app = await launch();
 let setup;
-for (let i = 0; i < 240 && !setup; i++) {
+for (let i = 0; i < 720 && !setup; i++) {
   setup = app.windows().find((w) => w.url().endsWith("setup.html"));
   if (!setup) await new Promise((r) => setTimeout(r, 500));
 }

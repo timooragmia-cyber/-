@@ -8,6 +8,8 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
+  // An advisor login may wait up to 30s for a fresh TOTP window (replay protection).
+  timeout: 90_000,
   globalSetup: "./tests/e2e/global-setup.ts",
   use: { baseURL: `http://localhost:${PORT}`, trace: "off", locale: "he-IL", timezoneId: "Asia/Jerusalem" },
   projects: [

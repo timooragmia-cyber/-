@@ -88,7 +88,7 @@ jobs:
           docker run --rm ta-backup -c 'pg_dump --version && age --version && aws --version'
       - name: Compose file is valid
         run: |
-          printf 'POSTGRES_PASSWORD=x\nDOMAIN=example.test\nACME_EMAIL=ops@example.test\n' > ci.env && touch backup.env
+          printf 'POSTGRES_PASSWORD=x\nDOMAIN=example.test\nACME_EMAIL=ops@example.test\n' > ci.env && touch .env backup.env
           docker compose --env-file ci.env --profile tools config -q
       - name: Shell scripts parse
         run: for f in deploy/*.sh deploy/backup/*.sh; do bash -n "$f"; done
