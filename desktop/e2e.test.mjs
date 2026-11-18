@@ -29,8 +29,9 @@ process.on("unhandledRejection", (e) => { console.error(e); dump(); process.exit
 import { appendFileSync } from "node:fs";
 const launch = async () => {
   const a = await electron.launch({
-    executablePath: require(path.resolve("node_modules/electron")), // the electron package exports its binary path
-    args: [path.resolve("dist/main.js"), ...(process.platform === "linux" ? ["--no-sandbox"] : [])],
+    // TA_E2E_EXE = the packaged program (what the user installs). Otherwise: Electron + dist.
+    executablePath: process.env.TA_E2E_EXE || require(path.resolve("node_modules/electron")),
+    args: [...(process.env.TA_E2E_EXE ? [] : [path.resolve("dist/main.js")]), ...(process.platform === "linux" ? ["--no-sandbox"] : [])],
     env: { ...process.env, TA_DESKTOP_TEST: "1", TA_DESKTOP_USERDATA: userData },
     timeout: 300_000,
   });

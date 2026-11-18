@@ -35,12 +35,17 @@ jobs:
       - name: Core test (PostgreSQL, migrations, seed, backup/restore)
         working-directory: desktop
         run: node --test dist/core.test.js
-      - name: Program test (setup, login, PDF, backup, restart, restore)
+      - name: Package the program (exactly what gets installed)
         working-directory: desktop
+        run: npx electron-builder --win --x64 --dir --publish never
+      - name: Program test on the packaged program (setup, login, PDF, backup, restart, restore)
+        working-directory: desktop
+        env:
+          TA_E2E_EXE: ${{ github.workspace }}\desktop\release\win-unpacked\TA-Mortgages.exe
         run: node e2e.test.mjs
-      - name: Build installer
+      - name: Build installer from the tested package
         working-directory: desktop
-        run: npx electron-builder --win --x64 --publish never
+        run: npx electron-builder --win --x64 --prepackaged release/win-unpacked --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: windows-installer

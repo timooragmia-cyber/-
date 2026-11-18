@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.1] — Windows installer fix (2026-11-18)
+
+### Fixed
+- **The installed program could not start ("Initial data setup failed").** electron-builder silently left the server's `node_modules` out of the installer. It is now copied in after packing, and the build fails if anything essential is missing.
+- **A build machine's `.env` was copied into the packaged server by Next.** It is now removed during assembly, and packaging refuses to include one. The 1.1.0 installer contained development keys only, no real data.
+
+### Changed
+- CI now packages the program first and runs the full program test on the **packaged** program (what the user installs). It then builds the installer from that tested package.
+
 ## [1.1.0] — Windows desktop edition (2026-11-15)
 
 The advisor runs the program on one Windows computer, with no internet and no client portal.

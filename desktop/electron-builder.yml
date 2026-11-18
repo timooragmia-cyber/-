@@ -15,6 +15,8 @@ files:
 extraResources:
   - from: stage/server
     to: server
+    # electron-builder drops the top-level node_modules here whatever the filter;
+    # build/afterPack.cjs copies it in (and fails the build if it is missing).
   - from: stage/pg
     to: pg
   - from: stage/migrations
@@ -22,6 +24,11 @@ extraResources:
   - from: stage/seed.js
     to: seed.js
 asar: true
+afterPack: build/afterPack.cjs
+# Linux target exists only so the packaged program can be tested in CI/sandbox.
+linux:
+  target: [dir]
+  executableName: ta-mortgages
 win:
   target:
     - target: nsis

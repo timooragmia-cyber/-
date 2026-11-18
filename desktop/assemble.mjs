@@ -41,6 +41,8 @@ cpSync(standalone, server, { recursive: true, verbatimSymlinks: true });
 cpSync(path.join(root, ".next", "static"), path.join(server, ".next", "static"), { recursive: true });
 cpSync(path.join(root, "messages"), path.join(server, "messages"), { recursive: true });
 if (existsSync(path.join(root, "public"))) cpSync(path.join(root, "public"), path.join(server, "public"), { recursive: true });
+// Next copies the build machine's .env into the standalone output: never ship it.
+for (const f of readdirSync(server)) if (f === ".env" || f.startsWith(".env.")) rmSync(path.join(server, f), { force: true });
 const nm = path.join(server, "node_modules");
 // Not used by the desktop edition: PDFs come from Electron's Chromium; no next/image.
 for (const d of ["playwright-core", "@img"]) rmSync(path.join(nm, d), { recursive: true, force: true });
