@@ -15,6 +15,9 @@ jobs:
   windows-installer:
     runs-on: windows-2022
     timeout-minutes: 60
+    env:
+      # prisma generate (postinstall) and next build need a URL; never connected to.
+      DATABASE_URL: postgresql://build:build@localhost:5432/build
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

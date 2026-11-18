@@ -47,8 +47,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
-      - name: Production dependencies have no known vulnerabilities
-        run: npm audit --omit=dev --audit-level=moderate
+      - name: Production dependencies have no unreviewed vulnerabilities
+        run: node scripts/audit-check.mjs
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
@@ -98,6 +98,9 @@ jobs:
   desktop-windows:
     runs-on: windows-2022
     timeout-minutes: 60
+    env:
+      # prisma generate (postinstall) and next build need a URL; never connected to.
+      DATABASE_URL: postgresql://build:build@localhost:5432/build
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

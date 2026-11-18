@@ -22,7 +22,9 @@ ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1
 # HTML, so no extra font packages are needed for Hebrew/Arabic.
 RUN apt-get update && apt-get install -y --no-install-recommends chromium && rm -rf /var/lib/apt/lists/*
 ENV CHROMIUM_PATH=/usr/bin/chromium
-RUN useradd --system --uid 1001 app && mkdir -p /app/storage && chown app /app/storage
+# Chromium needs a writable home (crash-report database, profile); a system user has none by default.
+ENV HOME=/home/app XDG_CONFIG_HOME=/tmp/.chromium XDG_CACHE_HOME=/tmp/.chromium
+RUN useradd --system --uid 1001 --create-home --home-dir /home/app app && mkdir -p /app/storage && chown app /app/storage
 COPY --from=build --chown=app /app/.next/standalone ./
 COPY --from=build --chown=app /app/.next/static ./.next/static
 COPY --from=build --chown=app /app/messages ./messages
