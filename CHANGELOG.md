@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.2] — Login fixes (2026-11-24)
+
+### Fixed
+- **A password of 10–11 characters locked the user out.** The setup window accepted 10+, but the seed silently replaced any explicit password shorter than 12 with a random one. An explicit password is now used as is, or the seed fails loudly. The desktop setup always (re)sets the chosen password, even after an interrupted earlier attempt.
+- **The e-mail field emptied after a failed login** (React 19 resets uncontrolled forms), so the next attempt failed for lack of an e-mail. The fields are now controlled.
+
+### Added
+- "Show password", and warnings when the password is typed in Hebrew letters or Caps Lock is on, in both the setup window and the login screen.
+- The program test uses a 10-character password and checks that the e-mail is kept after a failed login.
+
 ## [1.1.1] — Windows installer fix (2026-11-18)
 
 ### Fixed

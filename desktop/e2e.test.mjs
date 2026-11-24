@@ -15,7 +15,8 @@ const root = mkdtempSync(path.join(tmpdir(), "ta-e2e-"));
 const userData = path.join(root, "userdata");
 const backups = path.join(root, "backups");
 const EMAIL = "advisor@office.test";
-const PW = "Advisor-Pass-2026";
+// Exactly the 10-character minimum: a shorter-than-12 password once locked users out.
+const PW = "Pass-12345";
 const step = (m) => console.log(`✔ ${m}`);
 // On any failure, print the program's own logs so CI shows why.
 const dump = () => {
@@ -130,7 +131,17 @@ step("clean exit: database stopped");
 app = await launch();
 win = await mainWindow(app);
 assert.ok(!app.windows().some((w) => w.url().endsWith("setup.html")));
-await login(win);
+// A failed attempt must keep the e-mail: the retry types only the password.
+await win.locator("#email").fill(EMAIL);
+await win.locator("#password").fill("wrong-password-123");
+await win.locator("button[type=submit]").click();
+await win.getByRole("alert").waitFor();
+assert.equal(await win.locator("#email").inputValue(), EMAIL, "e-mail kept after a failed login");
+await win.locator("#password").fill(PW);
+await win.locator("button[type=submit]").click();
+await win.waitForURL(/\/advisor$/, { timeout: 30_000 });
+step("failed login keeps the e-mail; retry with the right password works");
+await win.goto(`${new URL(win.url()).origin}/advisor`);
 await win.getByText("משפחת לוי").first().waitFor();
 step("restart: no setup, data persisted");
 

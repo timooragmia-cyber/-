@@ -38,7 +38,10 @@
     "recoveryTitle": "קודי שחזור",
     "recoveryHelp": "שמרו את הקודים במקום בטוח. כל קוד ניתן לשימוש פעם אחת בלבד, והם לא יוצגו שוב.",
     "continue": "המשך",
-    "backToLogin": "חזרה לכניסה"
+    "backToLogin": "חזרה לכניסה",
+    "showPassword": "הצג סיסמה",
+    "hebrewInPassword": "שימו לב: הסיסמה מוקלדת באותיות עבריות. אם בחרתם אותה באנגלית — החליפו שפה (Alt+Shift).",
+    "capsLock": "Caps Lock דולק."
   },
   "advisor": {
     "dashboardTitle": "לוח בקרה — כל הלקוחות",

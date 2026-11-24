@@ -107,7 +107,7 @@ async function boot() {
     const setup = await firstRunSetup();
     log("setup completed; seeding");
     splash.show();
-    await runSeed({ SEED_ADVISOR_EMAIL: setup.email, SEED_ADVISOR_PASSWORD: setup.password, SEED_DEMO_DATA: setup.demo ? "true" : "false" });
+    await runSeed({ SEED_ADVISOR_EMAIL: setup.email, SEED_ADVISOR_PASSWORD: setup.password, SEED_ADVISOR_SET_PASSWORD: "true", SEED_DEMO_DATA: setup.demo ? "true" : "false" });
     settings = { ...settings, setupDone: true, advisorEmail: setup.email, seededVersion: app.getVersion() };
     saveS();
   } else if (settings.seededVersion !== app.getVersion()) {

@@ -19,9 +19,18 @@ const APPROVED_DEFAULTS = new Set(["emergency_fund.months", "monthly_close.grace
 // retirement.defaults: return scenarios approved 2026-11-14, but age / annuity factor still need confirmation → left unconfirmed.
 const agorot = (shekels: number) => BigInt(shekels) * 100n;
 
+/**
+ * A password given explicitly is used as is — or the seed FAILS. It never silently replaces a
+ * given password with a random one (that locked desktop users out when they chose 10–11
+ * characters). Only when none is given is a random one generated and printed.
+ */
+const MIN_PASSWORD = 10;
 function password(envName: string): { value: string; generated: boolean } {
   const v = process.env[envName];
-  if (v && v.length >= 12) return { value: v, generated: false };
+  if (v !== undefined && v !== "") {
+    if (v.length < MIN_PASSWORD) throw new Error(`${envName} must be at least ${MIN_PASSWORD} characters`);
+    return { value: v, generated: false };
+  }
   return { value: randomBytes(12).toString("base64url"), generated: true };
 }
 
@@ -87,7 +96,16 @@ async function seedReference() {
 async function seedAdvisor() {
   const email = (process.env.SEED_ADVISOR_EMAIL ?? "advisor@example.test").toLowerCase();
   const existing = await db.user.findUnique({ where: { email } });
-  if (existing) return { email, password: null as string | null, id: existing.id };
+  if (existing) {
+    // Desktop first-run setup: the password the user just chose always wins (an earlier,
+    // interrupted setup may have created this login already).
+    if (process.env.SEED_ADVISOR_SET_PASSWORD === "true") {
+      const pw = password("SEED_ADVISOR_PASSWORD");
+      if (pw.generated) throw new Error("SEED_ADVISOR_SET_PASSWORD needs SEED_ADVISOR_PASSWORD");
+      await db.user.update({ where: { id: existing.id }, data: { passwordHash: await hash(pw.value, ARGON), failedLoginCount: 0, lockedUntil: null, isActive: true } });
+    }
+    return { email, password: null as string | null, id: existing.id };
+  }
   const pw = password("SEED_ADVISOR_PASSWORD");
   const user = await db.user.create({
     data: { email, passwordHash: await hash(pw.value, ARGON), role: "ADVISOR", displayName: "T.A — יועץ", locale: "he" },
